@@ -1,18 +1,15 @@
-﻿# Project Overview
+# Project Overview
 
-Travel From Photo provides three main ways for users to explore places and routes.
+Locate Travel provides two ways for users to generate travel routes.
 
-1. Users can manually enter a destination name and receive a route from their current location.
+1. Users can manually enter a destination name and receive the shortest route from their current location.
 2. Users can upload an image of a place they want to visit.
-3. Users can upload a food photo to identify the cuisine and estimate restaurant candidates.
 
-When a travel image is uploaded, the system first checks whether the image contains GPS metadata. If location metadata exists, the system extracts the coordinates to identify the location.
+When an image is uploaded, the system first checks whether the image contains GPS metadata. If location metadata exists, the system extracts the coordinates to identify the location.
 
 If the metadata is missing or unreliable, the system analyzes the image using computer vision techniques. If recognizable landmarks are detected, the system estimates the location based on those features.
 
-If the image is a food photo, the system detects the food type first, then uses contextual hints such as country, city, and recent uploaded photos to narrow down likely restaurant candidates.
-
-If the location or restaurant is still uncertain, the system allows the user to provide contextual hints such as the country or city where the photo was taken. These hints help narrow down candidate locations using a place search API.
+If the image does not contain identifiable landmarks, the system allows the user to provide contextual hints such as the country or city where the photo was taken. These hints help narrow down candidate locations using a place search API. The system then compares the uploaded image with candidate images to estimate the most likely location.
 
 After the destination is identified, the system generates the shortest travel route from the user's current location to the destination and displays it on the web interface.
 
@@ -20,49 +17,44 @@ After the destination is identified, the system generates the shortest travel ro
 
 # System Architecture
 
-```text
 User
-|
-| Upload Travel Photo / Food Photo / Enter Destination
-v
+│
+│ Upload Image / Enter Destination
+▼
 Frontend (Web Application)
-|
-| HTTP Request
-v
-Backend Server (FastAPI)
-|
-|-- EXIF Metadata Extraction
-|-- Computer Vision Analysis
-|   |-- Landmark Detection
-|   `-- Image Embedding / Similarity Search
-|-- Food Recognition
-|   |-- Cuisine Detection
-|   `-- Restaurant Candidate Matching
-|-- User Hint Processing
-|   |-- Country / City Input
-|   `-- Recent Uploaded Photo Context
-|-- Places API
-|   `-- Candidate Location / Restaurant Search
-`-- Directions API
-    `-- Route Generation
-|
-v
+│
+│ HTTP Request
+▼
+Backend Server
+│
+├── EXIF Metadata Extraction
+│
+├── Computer Vision Analysis
+│ ├ Landmark Detection
+│ └ Image Embedding (CLIP)
+│
+├── Places API
+│ └ Candidate Location Search
+│
+└── Directions API
+└ Shortest Route Generation
+│
+▼
 Frontend Map Visualization
-```
+
 
 # Workflow
 
-1. The user uploads a travel photo, uploads a food photo, or enters a destination manually.
+1. User uploads an image or enters a destination.
 2. The backend checks whether the image contains GPS metadata.
 3. If GPS metadata exists, the system uses it to determine the location.
 4. If GPS metadata is not available, the system analyzes the image using computer vision.
-5. If landmarks are detected, the system estimates the place from visual features.
-6. If the image is food, the system identifies the cuisine or meal type.
-7. The user may provide contextual hints such as country or city.
-8. Recently uploaded photos can be reused as extra context for restaurant estimation.
-9. The system searches candidate locations or restaurants using a place search API.
-10. Once the destination is identified, the system generates the shortest route.
-11. The route is displayed on the map in the web interface.
+5. If landmarks are detected, the system estimates the location.
+6. If the location cannot be inferred, the user may provide contextual hints such as country or city.
+7. The system searches candidate locations using a place search API.
+8. Image similarity techniques are used to estimate the most likely location.
+9. Once the location is identified, the system generates the shortest route to the destination.
+10. The route is displayed on the map in the web interface.
 
 ---
 
@@ -72,16 +64,13 @@ Frontend Map Visualization
 - React
 - HTML / CSS
 - JavaScript
-- TypeScript
 
 ## Backend
 - FastAPI
-- Python
 
 ## AI / Computer Vision
 - CLIP (Image Embedding)
-- Landmark Detection
-- Food Classification / Cuisine Recognition
+- Google Vision API (Landmark Detection)
 
 ## External APIs
 - Google Places API
@@ -91,6 +80,28 @@ Frontend Map Visualization
 - Git
 - GitHub
 - VS Code
-- Docker
 
 ---
+
+
+================================================
+# privacy 
+Need to consider privacy of the users.
+
+# funcions
+If the image is only food, with no additional information.
+Search if it is uploaded in Websites, search the site and bring  location information.
+
+
+
+# Caution for work
+정보가 음식점이 아니라면?--> 스토킹? 개인정보?
+5 psudo users, get answers from them.
+
+
+end 유저 찾아서 (비슷한 기능) 물어보기
+백엔드 보안 
+end to end?
+
+
+
