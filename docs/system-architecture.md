@@ -45,7 +45,7 @@ This document consolidates the detailed system design notes that were previously
 - Docker
 - Standardized environment for database and backend services
 
-### Real-Time Communication
+### Real-Time Communication 
 
 - WebSocket
 - Used for real-time chat between users
