@@ -1,0 +1,19 @@
+{
+  "file_name": "nm1.jpg",
+  "absolute_path": "E:\\CSE 416\\Travel-from-photo\\backend\\test_images\\nm1.jpg",
+  "file_size_bytes": 474240,
+  "image": {
+    "format": "JPEG",
+    "mode": "RGB",
+    "width": 1108,
+    "height": 1477
+  },
+  "captured_at": null,
+  "camera": {
+    "make": null,
+    "model": null,
+    "lens_model": null
+  },
+  "gps": null,
+  "exif_summary": {}
+}
