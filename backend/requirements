@@ -6,3 +6,5 @@ exifread
 python-dotenv
 sqlalchemy
 psycopg[binary]
+torch
+transformers

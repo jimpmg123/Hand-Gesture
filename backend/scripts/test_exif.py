@@ -1,3 +1,6 @@
+# cd "E:\CSE 416\Travel-from-photo"
+# .\backend\.venv\Scripts\python.exe backend\scripts\test_exif.py backend\test_images\tm2.jpg
+
 from __future__ import annotations
 
 import json
