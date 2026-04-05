@@ -20,6 +20,7 @@ Used to display detected or inferred locations on an interactive map in the fron
 Used to convert latitude and longitude coordinates into a human-readable address.
 
 ### 4. Hugginface open AI, CLIP
+
 https://huggingface.co/openai/clip-vit-base-patch32
 
 
