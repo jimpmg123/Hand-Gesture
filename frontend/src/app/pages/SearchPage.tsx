@@ -1,155 +1,200 @@
 import { useState, type ChangeEvent } from 'react'
 
-import { travelWorkflow } from '../data'
-import { SearchActionCard } from '../search/components/SearchActionCard'
-import { SearchResults } from '../search/components/SearchResults'
-import { emptyUploadState, searchMocks } from '../search/data'
-import type { SearchMode, SearchPageProps, UploadState } from '../search/types'
+import { SectionIntro } from '../components/SectionIntro'
+import { formatFileSize, maxUploadSizeBytes } from '../search/data'
+import type { SearchPageProps, SearchUploadItem } from '../search/types'
 import { getUploadValidationError } from '../search/utils'
 
-export function SearchPage({
-  isLoggedIn,
-  selectedContext,
-  selectedContextId,
-  contextOptions,
-  onSelectContext,
-  onOpenPage,
-}: SearchPageProps) {
-  const [activeMockMode, setActiveMockMode] = useState<SearchMode | null>(null)
-  const [placeUpload, setPlaceUpload] = useState<UploadState>(emptyUploadState)
-  const [foodUpload, setFoodUpload] = useState<UploadState>(emptyUploadState)
+export function SearchPage({ onRunSearch }: SearchPageProps) {
+  const [countryHint, setCountryHint] = useState('')
+  const [cityHint, setCityHint] = useState('')
+  const [uploads, setUploads] = useState<SearchUploadItem[]>([])
+  const [uploadError, setUploadError] = useState('')
 
-  const activeMock = activeMockMode ? searchMocks[activeMockMode] : null
-  const isPlaceReady = Boolean(placeUpload.fileName) && !placeUpload.error
-  const isFoodReady = Boolean(foodUpload.fileName) && !foodUpload.error
+  const isReady = uploads.length > 0 && countryHint.trim().length > 0
 
-  const updateUploadState = (mode: SearchMode, nextState: UploadState) => {
-    if (mode === 'place') {
-      setPlaceUpload(nextState)
+  const handleImageUpload = (event: ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files ?? [])
+
+    if (files.length === 0) {
       return
     }
 
-    setFoodUpload(nextState)
-  }
+    const firstInvalidFile = files.find((file) => getUploadValidationError(file))
 
-  const handleImageUpload = (mode: SearchMode) => (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-
-    if (!file) {
-      return
-    }
-
-    const uploadError = getUploadValidationError(file)
-
-    if (uploadError) {
-      updateUploadState(mode, { fileName: '', error: uploadError })
-      setActiveMockMode(null)
+    if (firstInvalidFile) {
+      setUploads([])
+      setUploadError(getUploadValidationError(firstInvalidFile) ?? 'Image upload failed.')
       event.target.value = ''
       return
     }
 
-    updateUploadState(mode, { fileName: file.name, error: '' })
-    setActiveMockMode(null)
+    setUploads(
+      files.map((file, index) => ({
+        id: `${file.name}-${file.size}-${index}`,
+        fileName: file.name,
+        fileSizeBytes: file.size,
+        fileSizeLabel: formatFileSize(file.size),
+      })),
+    )
+    setUploadError('')
+  }
+
+  const handleSearch = () => {
+    if (!countryHint.trim()) {
+      setUploadError(
+        'Country hint is required because every inferred location is validated against it.',
+      )
+      return
+    }
+
+    if (uploads.length === 0) {
+      setUploadError('Upload at least one travel image before running the search flow.')
+      return
+    }
+
+    setUploadError('')
+    onRunSearch({
+      countryHint: countryHint.trim(),
+      cityHint: cityHint.trim(),
+      uploads,
+    })
   }
 
   return (
-    <div className="stack-xl">
-      <section className="section-heading">
-        <div>
-          <p className="eyebrow">Search</p>
-          <h2>Photo intelligence workspace</h2>
-        </div>
+    <div className="stack-xl search-main-shell">
+      <section className="search-page-header">
+        <p className="eyebrow">Search</p>
+        <h2>Travel from Photo</h2>
         <p className="section-copy">
-          One page for landmark search, food-photo restaurant discovery, and the route handoff that
-          follows both.
+          Upload one or more travel images, add country and city hints, and stage the temporary
+          frontend flow for EXIF extraction, landmark recognition, CLIP scene cues, and OpenAI
+          fallback inference.
         </p>
       </section>
 
-      <section className="search-grid">
-        <SearchActionCard
-          title="Place from photo"
-          detail="Designed for travel scenes, landmarks, streets, museums, and scenic shots."
-          uploadLabel="Drop a travel photo here"
-          uploadDescription="Read EXIF first, then run landmark and visual similarity analysis if metadata is weak."
-          uploadState={placeUpload}
-          isReady={isPlaceReady}
-          workflowItems={travelWorkflow}
-          onImageUpload={handleImageUpload('place')}
-          onShow={() => setActiveMockMode('place')}
-          onSearch={() => setActiveMockMode('place')}
-        >
-          <div className="field-grid">
-            <label className="field">
-              <span>Country hint</span>
-              <input type="text" placeholder="Japan" />
-            </label>
-            <label className="field">
-              <span>City hint</span>
-              <input type="text" placeholder="Kyoto" />
-            </label>
-          </div>
+      <section className="search-entry-layout">
+        <article className="panel content-panel search-entry-card">
+          <SectionIntro
+            title="Travel image intake"
+            detail="Food-photo handling is removed. This screen is focused only on travel-photo based location recovery."
+          />
 
-          <label className="field">
-            <span>Search note</span>
-            <textarea
-              rows={4}
-              defaultValue="Use this when the place is hard to detect or the photo is visually similar to many spots."
-            />
-          </label>
-        </SearchActionCard>
-
-        <SearchActionCard
-          title="Food photo branch"
-          detail="Use food type, country, city, and recent uploads to estimate restaurant candidates."
-          uploadLabel="Drop a meal photo here"
-          uploadDescription="The layout assumes cuisine detection first, then restaurant search refined by user hints and recent personal photo context."
-          uploadState={foodUpload}
-          isReady={isFoodReady}
-          isWarm
-          onImageUpload={handleImageUpload('food')}
-          onShow={() => setActiveMockMode('food')}
-          onSearch={() => setActiveMockMode('food')}
-        >
-          <div className="field-grid">
-            <label className="field">
-              <span>Country</span>
-              <input type="text" placeholder="South Korea" />
-            </label>
-            <label className="field">
-              <span>City</span>
-              <input type="text" placeholder="Seoul" />
-            </label>
-          </div>
-
-          <label className="field">
-            <span>Recent uploaded photos</span>
-            <div className="context-pills">
-              {contextOptions.map((photo) => (
-                <button
-                  key={photo.id}
-                  type="button"
-                  className={`context-pill ${selectedContextId === photo.id ? 'is-selected' : ''}`}
-                  onClick={() => onSelectContext(photo.id)}
-                >
-                  {photo.title}
-                </button>
-              ))}
+          <label className="upload-zone upload-zone--large">
+            <span className="zone-kicker">Multi-image upload</span>
+            <strong>Drop travel images here or choose multiple files</strong>
+            <p>
+              The real backend will run EXIF first, then landmark recognition, then CLIP and
+              OpenAI fallback only for unresolved images.
+            </p>
+            <div className="upload-actions">
+              <span className="upload-picker">
+                <input type="file" accept="image/*" multiple onChange={handleImageUpload} />
+                Choose images
+              </span>
+              <span className={`upload-status ${uploads.length > 0 ? 'is-ready' : ''}`}>
+                {uploads.length > 0
+                  ? `${uploads.length} image${uploads.length > 1 ? 's' : ''} ready`
+                  : `Any image file up to ${Math.round(maxUploadSizeBytes / (1024 * 1024))}MB per file is accepted in this temporary flow.`}
+              </span>
             </div>
           </label>
 
-          <div className="context-card">
-            <span className="pill">{selectedContext.type}</span>
-            <strong>{selectedContext.title}</strong>
-            <p>
-              Recent context: {selectedContext.location}. {selectedContext.insight}
-            </p>
+          {uploads.length > 0 ? (
+            <div className="upload-list">
+              {uploads.map((upload) => (
+                <div key={upload.id} className="upload-list-item">
+                  <strong>{upload.fileName}</strong>
+                  <span>{upload.fileSizeLabel}</span>
+                </div>
+              ))}
+            </div>
+          ) : null}
+
+          <div className="field-grid">
+            <label className="field">
+              <span>Country hint</span>
+              <input
+                type="text"
+                value={countryHint}
+                onChange={(event) => setCountryHint(event.target.value)}
+                placeholder="Japan"
+              />
+            </label>
+            <label className="field">
+              <span>City hint</span>
+              <input
+                type="text"
+                value={cityHint}
+                onChange={(event) => setCityHint(event.target.value)}
+                placeholder="Kyoto"
+              />
+            </label>
           </div>
-        </SearchActionCard>
+
+          {uploadError ? <p className="field-error">{uploadError}</p> : null}
+
+          <div className="search-entry-footer">
+            <button
+              type="button"
+              className="button-primary"
+              onClick={handleSearch}
+              disabled={!isReady}
+            >
+              Run temporary search
+            </button>
+          </div>
+        </article>
       </section>
 
-      {activeMock ? (
-        <SearchResults result={activeMock} isLoggedIn={isLoggedIn} onOpenPage={onOpenPage} />
-      ) : null}
+      <section className="search-pipeline-grid">
+        <article className="panel content-panel result-card">
+          <span className="metric-label">Stage 1</span>
+          <strong className="metric-value">EXIF service</strong>
+          <p>
+            Extract metadata from every uploaded image and save GPS immediately when it already
+            exists.
+          </p>
+        </article>
+
+        <article className="panel content-panel result-card">
+          <span className="metric-label">Stage 2</span>
+          <strong className="metric-value">Landmark recognition</strong>
+          <p>
+            Run only for images with missing GPS metadata and check whether the top candidate fits
+            the hinted country.
+          </p>
+        </article>
+
+        <article className="panel content-panel result-card">
+          <span className="metric-label">Stage 3</span>
+          <strong className="metric-value">CLIP + OpenAI</strong>
+          <p>
+            Use scene understanding and language reasoning as the fallback path when landmark
+            recognition fails.
+          </p>
+        </article>
+
+        <article className="panel content-panel result-card">
+          <span className="metric-label">Stage 4</span>
+          <strong className="metric-value">Backend image update</strong>
+          <p>
+            Store latitude and longitude only when the resolved location can be accepted inside the
+            user hint country.
+          </p>
+        </article>
+      </section>
+
+      <section className="section-heading">
+        <div>
+          <p className="eyebrow">Output</p>
+          <h2>What the temporary results page will show</h2>
+        </div>
+        <p className="section-copy">
+          The next screen lists each uploaded image, the source that resolved it, whether its
+          coordinates were saved, and the temporary address shown to the user.
+        </p>
+      </section>
     </div>
   )
 }

@@ -26,6 +26,8 @@ export function TopBar({
   onToggleRole,
   onToggleLogin,
 }: TopBarProps) {
+  const navActivePage = activePage === 'search-results' ? 'search' : activePage
+
   return (
     <header className="topbar panel">
       <div className="shortcut-cluster">
@@ -67,12 +69,12 @@ export function TopBar({
       <div className="brand-block">
         <p className="eyebrow">Travel From Photo</p>
         <div className="brand-row">
-          <h1>AI travel and food memory navigator</h1>
-          <span className="pill">frontend beta shell</span>
+          <h1>Travel-photo search workspace</h1>
+          <span className="pill">temporary frontend flow</span>
         </div>
         <p className="brand-copy">
-          Designed around upload-first discovery, route guidance, and a signed-in personal
-          gallery.
+          Upload travel images, extract metadata, and stage EXIF, landmark recognition, CLIP, and
+          OpenAI based location inference in one flow.
         </p>
       </div>
 
@@ -81,7 +83,7 @@ export function TopBar({
           <button
             key={item.id}
             type="button"
-            className={`nav-pill ${activePage === item.id ? 'is-active' : ''}`}
+            className={`nav-pill ${navActivePage === item.id ? 'is-active' : ''}`}
             onClick={() => onOpenPage(item.id)}
           >
             <span>{item.label}</span>

@@ -699,6 +699,86 @@
   gap: 24px;
 }
 
+.search-main-shell {
+  align-content: start;
+}
+
+.search-page-header {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 12px;
+  padding: 28px 0 8px;
+}
+
+.search-page-header h2 {
+  margin: 0;
+  font-family: 'Palatino Linotype', 'Book Antiqua', Georgia, serif;
+  font-size: clamp(2.4rem, 5vw, 4.2rem);
+  letter-spacing: -0.04em;
+}
+
+.search-page-header .section-copy {
+  max-width: 54rem;
+}
+
+.search-entry-layout {
+  display: grid;
+  justify-content: center;
+}
+
+.search-entry-card {
+  width: min(100%, 920px);
+  display: grid;
+  gap: 20px;
+}
+
+.upload-zone--large {
+  margin-bottom: 0;
+  min-height: 240px;
+  align-content: center;
+  justify-items: center;
+  text-align: center;
+}
+
+.upload-zone--large p {
+  max-width: 52rem;
+  margin: 0;
+}
+
+.upload-list {
+  display: grid;
+  gap: 12px;
+}
+
+.upload-list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(71, 49, 24, 0.08);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.upload-list-item strong,
+.upload-list-item span {
+  margin: 0;
+}
+
+.search-entry-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.search-pipeline-grid,
+.results-summary-grid {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 .analysis-hero {
   display: grid;
   gap: 24px;
@@ -805,6 +885,72 @@
 .candidate-stack {
   display: grid;
   gap: 16px;
+}
+
+.image-result-list {
+  display: grid;
+  gap: 16px;
+}
+
+.image-result-card {
+  display: grid;
+  gap: 18px;
+  padding: 22px;
+  border-radius: 24px;
+  border: 1px solid rgba(71, 49, 24, 0.08);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.image-result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 16px;
+}
+
+.image-result-header strong,
+.image-result-header p,
+.image-result-summary {
+  margin: 0;
+}
+
+.image-result-header p,
+.image-result-summary {
+  color: var(--muted);
+}
+
+.result-state-pill {
+  display: inline-flex;
+  width: fit-content;
+  padding: 0.48rem 0.85rem;
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+.result-state-pill--saved {
+  background: rgba(15, 118, 110, 0.12);
+  color: var(--accent);
+}
+
+.result-state-pill--failed {
+  background: rgba(185, 28, 28, 0.12);
+  color: #b42318;
+}
+
+.image-result-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.image-result-grid-span {
+  grid-column: 1 / -1;
+}
+
+.empty-results-card {
+  display: grid;
+  gap: 16px;
+  max-width: 760px;
 }
 
 .candidate-list {
@@ -922,6 +1068,8 @@
 .search-results-footer {
   display: flex;
   justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .locked-shell {
@@ -1276,7 +1424,9 @@
   .analysis-hero,
   .details-layout,
   .gallery-layout,
-  .profile-grid {
+  .profile-grid,
+  .search-pipeline-grid,
+  .results-summary-grid {
     grid-template-columns: 1fr;
   }
 
@@ -1318,7 +1468,8 @@
   .metric-grid,
   .candidate-row,
   .image-grid,
-  .gallery-grid--groups {
+  .gallery-grid--groups,
+  .image-result-grid {
     grid-template-columns: 1fr;
   }
 

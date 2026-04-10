@@ -1,6 +1,6 @@
 export type PageId =
-  | 'home'
   | 'search'
+  | 'search-results'
   | 'gallery'
   | 'profile'
   | 'sign-in'

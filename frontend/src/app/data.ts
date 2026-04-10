@@ -8,8 +8,7 @@ import type {
 } from './types'
 
 export const navItems: NavItem[] = [
-  { id: 'home', label: 'Home', hint: 'overview' },
-  { id: 'search', label: 'Search', hint: 'photo + food workflows' },
+  { id: 'search', label: 'Search', hint: 'travel-photo intake' },
   { id: 'gallery', label: 'Gallery', hint: 'my uploads' },
   { id: 'profile', label: 'Profile', hint: 'account + settings' },
 ]

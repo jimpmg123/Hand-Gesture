@@ -1,28 +1,36 @@
 import { useState, useTransition } from 'react'
 import './App.css'
-import { defaultMockAccount, uploadedPhotos } from './app/data'
+import { defaultMockAccount } from './app/data'
 import { TopBar } from './app/components/TopBar'
+import { useGalleryBrowser } from './app/hooks/useGalleryBrowser'
 import { CreateAccountPage } from './app/pages/CreateAccountPage'
 import { GalleryPage } from './app/pages/GalleryPage'
-import { HomePage } from './app/pages/HomePage'
+import { ImagesPage } from './app/pages/ImagesPage'
 import { ProfilePage } from './app/pages/ProfilePage'
 import { SearchPage } from './app/pages/SearchPage'
+import { SearchResultsPage } from './app/pages/SearchResultsPage'
 import { SignInPage } from './app/pages/SignInPage'
+import type { SearchSession } from './app/search/types'
 import type { MockAccount, PageId, Role } from './app/types'
 
-const defaultSelectedContext = uploadedPhotos[1] ?? uploadedPhotos[0]
-
 function App() {
-  const [activePage, setActivePage] = useState<PageId>('home')
+  const [activePage, setActivePage] = useState<PageId>('search')
   const [isLoggedIn, setIsLoggedIn] = useState(true)
   const [role, setRole] = useState<Role>('traveler')
   const [currentAccount, setCurrentAccount] = useState<MockAccount>(defaultMockAccount)
   const [createdAccount, setCreatedAccount] = useState<MockAccount | null>(null)
-  const [selectedContextId, setSelectedContextId] = useState(defaultSelectedContext.id)
+  const [latestSearchSession, setLatestSearchSession] = useState<SearchSession | null>(null)
   const [isPending, startTransition] = useTransition()
-
-  const selectedContext =
-    uploadedPhotos.find((photo) => photo.id === selectedContextId) ?? defaultSelectedContext
+  const {
+    closeImage,
+    galleryState,
+    navigateImage,
+    openGroup,
+    openImage,
+    renameGroup,
+    selectedGalleryGroup,
+    selectedGalleryImage,
+  } = useGalleryBrowser()
 
   const openPage = (page: PageId) => {
     startTransition(() => {
@@ -40,6 +48,16 @@ function App() {
     setIsLoggedIn(true)
   }
 
+  const handleLogout = () => {
+    setIsLoggedIn(false)
+    openPage('sign-in')
+  }
+
+  const handleRunSearch = (session: SearchSession) => {
+    setLatestSearchSession(session)
+    openPage('search-results')
+  }
+
   const toggleRole = () => {
     setRole((current) => (current === 'traveler' ? 'admin' : 'traveler'))
   }
@@ -51,8 +69,8 @@ function App() {
   const handleCreateAccount = (account: MockAccount) => {
     setCreatedAccount(account)
     setCurrentAccount(account)
-    setIsLoggedIn(true)
-    openPage('profile')
+    setIsLoggedIn(false)
+    openPage('sign-in')
   }
 
   const handleLogin = (identifier: string, password: string) => {
@@ -85,21 +103,53 @@ function App() {
 
   const renderActivePage = () => {
     switch (activePage) {
-      case 'home':
-        return <HomePage isLoggedIn={isLoggedIn} onOpenPage={openPage} />
       case 'search':
+        return <SearchPage onRunSearch={handleRunSearch} />
+      case 'search-results':
         return (
-          <SearchPage
+          <SearchResultsPage
             isLoggedIn={isLoggedIn}
-            selectedContext={selectedContext}
-            selectedContextId={selectedContextId}
-            contextOptions={uploadedPhotos}
-            onSelectContext={setSelectedContextId}
+            searchSession={latestSearchSession}
             onOpenPage={openPage}
           />
         )
       case 'gallery':
-        return <GalleryPage isLoggedIn={isLoggedIn} photos= {uploadedPhotos} onOpenPage={openPage} />
+        return (
+          <GalleryPage
+            groups={galleryState}
+            isLoggedIn={isLoggedIn}
+            onOpenPage={openPage}
+            onRenameGroup={renameGroup}
+            onViewImages={(group) => {
+              openGroup(group)
+              openPage('images')
+            }}
+          />
+        )
+      case 'images':
+        if (!selectedGalleryGroup) {
+          return <GalleryPage
+            groups={galleryState}
+            isLoggedIn={isLoggedIn}
+            onOpenPage={openPage}
+            onRenameGroup={renameGroup}
+            onViewImages={(group) => {
+              openGroup(group)
+              openPage('images')
+            }}
+          />
+        }
+
+        return (
+          <ImagesPage
+            group={selectedGalleryGroup}
+            selectedImage={selectedGalleryImage}
+            onBack={() => openPage('gallery')}
+            onOpenImage={openImage}
+            onCloseImage={closeImage}
+            onNavigateImage={navigateImage}
+          />
+        )
       case 'profile':
         return <ProfilePage account={currentAccount} isLoggedIn={isLoggedIn} role={role} />
       case 'sign-in':
@@ -113,7 +163,7 @@ function App() {
       case 'create-account':
         return <CreateAccountPage onCreateAccount={handleCreateAccount} onOpenPage={openPage} />
       default:
-        return <HomePage isLoggedIn={isLoggedIn} onOpenPage={openPage} />
+        return <SearchPage onRunSearch={handleRunSearch} />
     }
   }
 
@@ -132,6 +182,7 @@ function App() {
           userDisplayName={userDisplayName}
           onOpenPage={openPage}
           onOpenUserPage={openUserPage}
+          onLogout={handleLogout}
           onToggleRole={toggleRole}
           onToggleLogin={toggleLogin}
         />

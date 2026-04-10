@@ -1,20 +1,20 @@
 import { SectionIntro } from '../../components/SectionIntro'
 import type { PageNavigator } from '../../types'
-import type { MockResult } from '../types'
+import type { SearchResultBundle } from '../types'
 
 type SearchResultsProps = {
-  result: MockResult
+  bundle: SearchResultBundle
   isLoggedIn: boolean
   onOpenPage: PageNavigator
 }
 
-export function SearchResults({ result, isLoggedIn, onOpenPage }: SearchResultsProps) {
+export function SearchResults({ bundle, isLoggedIn, onOpenPage }: SearchResultsProps) {
   return (
     <section className="panel content-panel search-results-shell">
       <section className="section-heading results-heading">
         <div>
-          <p className="eyebrow">{result.label}</p>
-          <h2>{result.heading}</h2>
+          <p className="eyebrow">Search Results</p>
+          <h2>{bundle.heading}</h2>
         </div>
         <div className="results-heading-side">
           <button
@@ -37,51 +37,89 @@ export function SearchResults({ result, isLoggedIn, onOpenPage }: SearchResultsP
             </svg>
             <span>Save to Gallery</span>
           </button>
-          <p className="section-copy">{result.subheading}</p>
+          <p className="section-copy">{bundle.subheading}</p>
         </div>
       </section>
+
+      <div className="results-summary-grid">
+        {bundle.summaryCards.map((card) => (
+          <article key={card.label} className="result-card">
+            <span className="metric-label">{card.label}</span>
+            <strong className="metric-value">{card.value}</strong>
+            <p>{card.detail}</p>
+          </article>
+        ))}
+      </div>
 
       <div className="analysis-hero">
         <div className="map-placeholder">
           <div className="map-placeholder-head">
             <span className="pill">Placeholder Map</span>
-            <span className="pill">{result.topCandidate.score}% confidence</span>
+            <span className="pill">
+              {bundle.topResolved ? 'coordinates ready' : 'no valid coordinates'}
+            </span>
           </div>
           <div className="map-placeholder-center">
-            <strong>{result.topCandidate.placeholderNote}</strong>
-            <p>{result.topCandidate.title}</p>
-            <span>{result.topCandidate.coordinates}</span>
+            <strong>
+              {bundle.topResolved
+                ? 'Temporary map placeholder for the highest-confidence resolved image'
+                : 'No image passed the save rule in this temporary run'}
+            </strong>
+            <p>
+              {bundle.topResolved?.address ??
+                'A resolved address will appear here after a successful run.'}
+            </p>
+            <span>{bundle.topResolved?.coordinates ?? 'No coordinates saved'}</span>
           </div>
         </div>
 
         <aside className="focus-card">
           <span className="result-label">Highest confidence</span>
-          <h3>{result.topCandidate.title}</h3>
-          <p>{result.topCandidate.location}</p>
-          <div className="confidence-pill">{result.topCandidate.score}%</div>
-          <p className="focus-card-copy">{result.topCandidate.detail}</p>
+          <h3>{bundle.topResolved?.imageName ?? 'No resolved image yet'}</h3>
+          <p>{bundle.topResolved?.source ?? 'Awaiting successful location resolution'}</p>
+          <div className="confidence-pill">
+            {bundle.topResolved ? 'saved to backend' : 'temporary failure'}
+          </div>
+          <p className="focus-card-copy">
+            {bundle.topResolved?.summary ??
+              'If every image fails validation, the final product should show a visible failure state instead of storing coordinates.'}
+          </p>
         </aside>
       </div>
 
       <div className="candidate-stack">
         <SectionIntro
-          title="Other candidates"
-          detail="These lower-ranked matches are mock placeholders until the search APIs are connected."
+          title="Per-image processing output"
+          detail="Each uploaded image shows whether EXIF, landmark recognition, CLIP + OpenAI fallback, or failure determined the final state."
         />
-        <div className="candidate-list">
-          {result.candidates.map((candidate) => (
-            <article key={candidate.title} className="candidate-row">
-              <div className="candidate-thumb">
-                <span>Placeholder</span>
+        <div className="image-result-list">
+          {bundle.results.map((result) => (
+            <article key={result.id} className="image-result-card">
+              <div className="image-result-header">
+                <div>
+                  <strong>{result.imageName}</strong>
+                  <p>{result.source}</p>
+                </div>
+                <span className={`result-state-pill result-state-pill--${result.status}`}>
+                  {result.status === 'saved' ? 'Stored' : 'Failed'}
+                </span>
               </div>
-              <div className="candidate-copy">
-                <strong>{candidate.title}</strong>
-                <p>{candidate.location}</p>
-                <small>{candidate.detail}</small>
-              </div>
-              <div className="candidate-score">
-                <span>{candidate.score}%</span>
-                <small>confidence</small>
+
+              <p className="image-result-summary">{result.summary}</p>
+
+              <div className="image-result-grid">
+                <div className="details-placeholder-item">
+                  <strong>Coordinates</strong>
+                  <p>{result.coordinates ?? 'No coordinates stored'}</p>
+                </div>
+                <div className="details-placeholder-item">
+                  <strong>Address</strong>
+                  <p>{result.address ?? 'Address unavailable because location inference failed'}</p>
+                </div>
+                <div className="details-placeholder-item image-result-grid-span">
+                  <strong>Backend image record</strong>
+                  <p>{result.backendRecord}</p>
+                </div>
               </div>
             </article>
           ))}
@@ -91,11 +129,11 @@ export function SearchResults({ result, isLoggedIn, onOpenPage }: SearchResultsP
       <div className="details-layout">
         <article className="details-card">
           <SectionIntro
-            title="Location Estimate Details"
-            detail="API-backed values will replace these placeholders after backend integration."
+            title="Processing rules"
+            detail="This is the intended backend sequence for EXIF, landmark recognition, CLIP, and OpenAI based location inference."
           />
           <div className="details-placeholder-list">
-            {result.sourcePlaceholders.map((item) => (
+            {bundle.processingNotes.map((item) => (
               <div key={item.label} className="details-placeholder-item">
                 <strong>{item.label}</strong>
                 <p>{item.value}</p>
@@ -106,30 +144,24 @@ export function SearchResults({ result, isLoggedIn, onOpenPage }: SearchResultsP
 
         <article className="details-card">
           <SectionIntro
-            title="Inferred keywords"
-            detail="These are temporary location-related keywords to show how the final UI will read."
+            title="External services in this flow"
+            detail="The final backend flow uses these services to decide whether a coordinate can be written to the image record."
           />
-          <div className="keyword-cloud">
-            {result.keywords.map((keyword) => (
-              <span key={keyword} className="keyword-chip">
-                {keyword}
-              </span>
+          <div className="details-placeholder-list">
+            {bundle.serviceNotes.map((item) => (
+              <div key={item.label} className="details-placeholder-item">
+                <strong>{item.label}</strong>
+                <p>{item.value}</p>
+              </div>
             ))}
-          </div>
-
-          <div className="possibility-block">
-            <strong>Other location possibilities</strong>
-            <div className="possibility-list">
-              {result.possibilities.map((item) => (
-                <span key={item}>{item}</span>
-              ))}
-            </div>
-            <div className="mini-map-placeholder">Placeholder mini-map for alternative points</div>
           </div>
         </article>
       </div>
 
       <div className="search-results-footer">
+        <button type="button" className="button-secondary" onClick={() => onOpenPage('search')}>
+          Back to search
+        </button>
         {!isLoggedIn ? (
           <button type="button" className="button-secondary" onClick={() => onOpenPage('sign-in')}>
             Sign in to save this result

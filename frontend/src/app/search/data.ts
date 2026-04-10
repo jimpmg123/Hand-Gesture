@@ -1,110 +1,156 @@
-import type { MockResult, SearchMode, UploadState } from './types'
+import type { SearchImageResult, SearchResultBundle, SearchSession, UploadState } from './types'
+
+export const maxUploadSizeBytes = 30 * 1024 * 1024
 
 export const emptyUploadState: UploadState = {
   fileName: '',
   error: '',
 }
 
-export const maxUploadSizeBytes = 30 * 1024 * 1024
+function formatHintLocation(countryHint: string, cityHint: string): string {
+  return cityHint ? `${cityHint}, ${countryHint}` : countryHint
+}
 
-export const searchMocks: Record<SearchMode, MockResult> = {
-  place: {
-    label: 'Travel photo result',
-    heading: 'Top estimated location',
-    subheading: 'The center map area stays a placeholder until the maps API is connected.',
-    topCandidate: {
-      title: 'Igidae coastal overlook',
-      location: 'Busan, South Korea',
-      score: 91,
-      coordinates: '35.1123, 129.1214',
-      detail: 'Pier lines, sunrise lighting, and coastline geometry point to a harbor viewpoint.',
-      placeholderNote: 'Large map placeholder for the best location candidate',
-    },
-    candidates: [
+function createCoordinatePair(index: number): string {
+  const latitude = (34.85 + index * 0.173).toFixed(4)
+  const longitude = (128.62 + index * 0.241).toFixed(4)
+  return `${latitude}, ${longitude}`
+}
+
+export function formatFileSize(bytes: number): string {
+  const megabytes = bytes / (1024 * 1024)
+  return `${megabytes.toFixed(1)} MB`
+}
+
+export function buildSearchResultBundle(session: SearchSession): SearchResultBundle {
+  const locationLabel = formatHintLocation(session.countryHint, session.cityHint)
+
+  const results: SearchImageResult[] = session.uploads.map((upload, index) => {
+    const pattern = index % 4
+
+    if (pattern === 0) {
+      const coordinates = createCoordinatePair(index)
+
+      return {
+        id: upload.id,
+        imageName: upload.fileName,
+        status: 'saved',
+        source: 'EXIF metadata',
+        summary: `GPS metadata was present, so the image was stored immediately after matching the user hint country ${session.countryHint}.`,
+        coordinates,
+        address: `Temporary address near ${locationLabel}`,
+        backendRecord: 'Latitude and longitude saved to the image metadata record from EXIF.',
+      }
+    }
+
+    if (pattern === 1) {
+      const coordinates = createCoordinatePair(index)
+
+      return {
+        id: upload.id,
+        imageName: upload.fileName,
+        status: 'saved',
+        source: 'Landmark recognition',
+        summary: `EXIF GPS was missing, landmark recognition returned a top candidate, and the country check passed against ${session.countryHint}.`,
+        coordinates,
+        address: `Temporary landmark-matched address inside ${locationLabel}`,
+        backendRecord: 'Latitude and longitude saved after landmark recognition and country validation.',
+      }
+    }
+
+    if (pattern === 2) {
+      const coordinates = createCoordinatePair(index)
+
+      return {
+        id: upload.id,
+        imageName: upload.fileName,
+        status: 'saved',
+        source: 'CLIP + OpenAI fallback',
+        summary: `Landmark recognition failed, so CLIP scene cues and OpenAI reasoning were used to infer a candidate location inside ${session.countryHint}.`,
+        coordinates,
+        address: `Temporary OpenAI-assisted address near ${locationLabel}`,
+        backendRecord: 'Latitude and longitude saved after fallback inference and user-hint country validation.',
+      }
+    }
+
+    return {
+      id: upload.id,
+      imageName: upload.fileName,
+      status: 'failed',
+      source: 'Location inference failed',
+      summary: `Neither EXIF, landmark recognition, nor the CLIP and OpenAI fallback produced a location that could be accepted inside ${session.countryHint}.`,
+      coordinates: null,
+      address: null,
+      backendRecord: 'No latitude or longitude stored. Show failure state in the result screen.',
+    }
+  })
+
+  const savedResults = results.filter((result) => result.status === 'saved')
+  const failedResults = results.length - savedResults.length
+
+  return {
+    heading: 'Temporary search results',
+    subheading:
+      'This page shows how per-image success, fallback, and failure states will render before the real backend pipeline is connected.',
+    topResolved: savedResults[0] ?? null,
+    results,
+    summaryCards: [
       {
-        title: 'Gwangalli waterfront deck',
-        location: 'Busan, South Korea',
-        score: 84,
-        detail: 'Another harbor-adjacent candidate with a similar sunrise composition.',
+        label: 'Uploaded images',
+        value: `${session.uploads.length}`,
+        detail: 'Multiple travel images are processed in a single search run.',
       },
       {
-        title: 'Songdo skywalk edge',
-        location: 'Busan, South Korea',
-        score: 76,
-        detail: 'Boardwalk shape and ocean framing make this a secondary possibility.',
+        label: 'Saved coordinates',
+        value: `${savedResults.length}`,
+        detail: 'These images passed a location check and would be written to backend image metadata.',
       },
       {
-        title: 'Haeundae marina lookout',
-        location: 'Busan, South Korea',
-        score: 68,
-        detail: 'Waterfront density fits, but the skyline match is weaker than the top result.',
+        label: 'Failed images',
+        value: `${failedResults}`,
+        detail: 'These images remain unresolved and should show a failure state to the user.',
+      },
+      {
+        label: 'User hints',
+        value: locationLabel,
+        detail: 'Country is the required validation boundary. City narrows the address display if provided.',
       },
     ],
-    sourcePlaceholders: [
+    processingNotes: [
       {
-        label: 'Landmark source placeholder',
-        value: 'Placeholder for the landmark API response and confidence summary.',
+        label: '1. EXIF service',
+        value: 'Extract metadata first. If GPS exists, use it as the primary source.',
       },
       {
-        label: 'Address source placeholder',
-        value: 'Placeholder for reverse-geocoded address text after coordinates are confirmed.',
+        label: '2. Landmark recognition',
+        value: 'Run only when GPS metadata is missing, then validate whether the returned landmark fits the hinted country.',
       },
       {
-        label: 'Directions source placeholder',
-        value: 'Placeholder for route duration and transport mode once navigation is connected.',
-      },
-    ],
-    keywords: ['harbor', 'coastline', 'pier', 'sunrise', 'bayfront', 'viewpoint'],
-    possibilities: ['Marine City edge', 'Oryukdo coast trail', 'Songjeong waterfront'],
-  },
-  food: {
-    label: 'Food photo result',
-    heading: 'Top restaurant-area estimate',
-    subheading: 'The large map block is a placeholder until the restaurant search map is connected.',
-    topCandidate: {
-      title: 'Lantern Alley Ramen House',
-      location: 'Kyoto, Japan',
-      score: 88,
-      coordinates: '35.0037, 135.7788',
-      detail:
-        'Nighttime alley cues, ramen bowl styling, and recent travel context point to a Kyoto dining district.',
-      placeholderNote: 'Large map placeholder for the best restaurant-area candidate',
-    },
-    candidates: [
-      {
-        title: 'Gion Corner Noodle Bar',
-        location: 'Kyoto, Japan',
-        score: 81,
-        detail: 'Historic street feel and lantern ambience align with the uploaded meal context.',
+        label: '3. CLIP + OpenAI',
+        value: 'If landmark recognition fails, use scene cues and language reasoning to infer a candidate inside the user hint boundary.',
       },
       {
-        title: 'Pontocho Late Supper',
-        location: 'Kyoto, Japan',
-        score: 73,
-        detail: 'Narrow alley dining and dense night lighting make this a nearby possibility.',
-      },
-      {
-        title: 'Station-side Ramen Stop',
-        location: 'Kyoto, Japan',
-        score: 64,
-        detail: 'The cuisine fit is strong, but the neighborhood cues are less specific.',
+        label: '4. Backend save rule',
+        value: 'Store latitude and longitude only when the inferred result can be accepted for the user hint country.',
       },
     ],
-    sourcePlaceholders: [
+    serviceNotes: [
       {
-        label: 'Cuisine source placeholder',
-        value: 'Placeholder for food-category, cuisine, and style output from the food analysis step.',
+        label: 'Landmark recognition',
+        value: 'Used for landmark-first recovery when an image has no GPS metadata.',
       },
       {
-        label: 'Places source placeholder',
-        value: 'Placeholder for ranked restaurant candidates once the places API is connected.',
+        label: 'CLIP',
+        value: 'Used for scene understanding so the fallback prompt has structured visual cues.',
       },
       {
-        label: 'Directions source placeholder',
-        value: 'Placeholder for restaurant route details after the destination is selected.',
+        label: 'OpenAI',
+        value: 'Used to reason over the image context and the user hints when landmark recognition fails.',
+      },
+      {
+        label: 'Address output',
+        value: 'The coordinates shown here are temporary placeholders until reverse geocoding is wired to the backend.',
       },
     ],
-    keywords: ['lantern alley', 'historic district', 'night dining', 'narrow street', 'station block'],
-    possibilities: ['Gion dining lane', 'Pontocho riverside strip', 'Kyoto station food row'],
-  },
+  }
 }
