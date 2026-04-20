@@ -309,3 +309,128 @@ All admin-only APIs should require both:
 2. A verified admin role.
 
 If either check fails, access should be denied. This policy should be implemented in FastAPI dependency-based authorization logic when the admin backend is added.
+
+## 10. AI Trip Journal Processing Flow
+
+The journal feature uses a stricter pipeline than Search.
+
+### Journal Eligibility Rule
+
+Only images with exact EXIF time and exact EXIF GPS are allowed into the journal pipeline.
+
+- `has_exif_datetime = true`
+- `has_exif_gps = true`
+
+Images whose location was inferred only by landmark detection, OCR, or OpenAI should not be used as journal source images.
+
+### Observation Layer
+
+Journal processing does not work directly on raw uploaded images first.
+It first creates an intermediate observation layer.
+
+- Images taken within `10 seconds` of the first image in a burst
+- and within about `30 meters`
+- are collapsed into a single observation
+
+This is used to treat repeated burst shots as one observation in the journal timeline.
+
+Each observation keeps:
+
+- a representative image
+- observation start/end time
+- center latitude/longitude
+- image count
+
+### Segment Layer
+
+After observations are created, the backend builds journal segments.
+Segments are the actual stay / transit / uncertain units used by the journal.
+
+- `stay`: a destination-like stop or visit segment
+- `transit`: a movement segment between stays
+- `uncertain`: a segment that could not be classified with enough confidence
+
+The system should classify observations first and then merge nearby observations into final segments.
+
+### Stay / Transit Classification Signals
+
+The journal classifier should combine multiple signals instead of relying on one rule only.
+
+#### Time and GPS
+
+- observation order in time
+- distance to previous and next observations
+- duration within the current observation
+
+#### POI Enrichment
+
+The backend should query nearby places for ambiguous observations.
+
+- destination-like POIs increase stay confidence
+  - `restaurant`
+  - `cafe`
+  - `museum`
+  - `tourist_attraction`
+  - `lodging`
+  - `park`
+- transit-like POIs increase transit confidence
+  - `train_station`
+  - `subway_station`
+  - `airport`
+  - `bus_station`
+  - `transit_station`
+
+POI should be treated as a supporting signal, not the only rule.
+
+#### Image Context Classification
+
+The backend should run a journal-focused image classifier for ambiguous observations.
+
+Useful labels include:
+
+- `destination_scene`
+- `transport_related_scene`
+- `food_photo`
+- `document_like`
+- `generic_scene`
+
+#### Document Understanding
+
+If an observation looks document-like, the backend should run OCR and document classification.
+Document subtype can then affect stay/transit confidence.
+
+Example document subtypes:
+
+- `transport_ticket`
+- `lodging_confirmation`
+- `museum_ticket`
+- `receipt`
+- `map_screenshot`
+
+### Weather Lookup
+
+Weather should not be fetched for all uploaded images at upload time.
+
+Instead, historical weather should be fetched only during journal generation for eligible journal observations or segments.
+
+Weather caching rule:
+
+- cache key: `provider + country + city + weather_date`
+
+This avoids repeated weather API calls for multiple images from the same city on the same date.
+
+### Journal Generation
+
+After segment construction is complete, the journal generation step should send structured segment data to the LLM.
+
+The prompt should include:
+
+- ordered segments
+- representative images
+- segment type
+- location labels
+- time range
+- weather summary
+- user notes when available
+
+The model should generate narrative text from the segment structure, rather than trying to discover the segment structure by itself.
