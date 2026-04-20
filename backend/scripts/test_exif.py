@@ -9,7 +9,7 @@ from pathlib import Path
 
 CURRENT_FILE = Path(__file__).resolve()
 BACKEND_DIR = CURRENT_FILE.parents[1]
-TEST_RESULTS_DIR = BACKEND_DIR / "test_results"
+TEST_RESULTS_DIR = BACKEND_DIR / "test_results" / "test_exif"
 
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))

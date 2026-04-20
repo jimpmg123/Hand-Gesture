@@ -35,6 +35,9 @@ backend/__pycache__/
 # environment variables
 .env
 backend/.env
+backend/storage/
+backend/test_results/
+qwen-code-main/
 
 # =========================
 # Editor / OS files

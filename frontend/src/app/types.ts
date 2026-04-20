@@ -1,6 +1,10 @@
 export type PageId =
   | 'search'
   | 'search-results'
+  | 'travelize-1'
+  | 'travelize-2'
+  | 'travelize-3'
+  | 'travelize-4'
   | 'gallery'
   | 'profile'
   | 'sign-in'

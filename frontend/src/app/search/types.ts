@@ -47,6 +47,7 @@ export type SearchResultBundle = {
 
 export type SearchPageProps = {
   onRunSearch: (session: SearchSession) => void
+  onOpenPage: (page: PageId) => void
 }
 
 export type SearchResultsPageProps = {

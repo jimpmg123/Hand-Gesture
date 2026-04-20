@@ -26,7 +26,12 @@ export function TopBar({
   onToggleRole,
   onToggleLogin,
 }: TopBarProps) {
-  const navActivePage = activePage === 'search-results' ? 'search' : activePage
+  const navActivePage =
+    activePage === 'search-results'
+      ? 'search'
+      : activePage === 'travelize-2' || activePage === 'travelize-3' || activePage === 'travelize-4'
+        ? 'travelize-1'
+        : activePage
 
   return (
     <header className="topbar panel">
