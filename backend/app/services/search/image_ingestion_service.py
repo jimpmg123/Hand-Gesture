@@ -8,7 +8,7 @@ from fastapi import UploadFile
 from sqlalchemy.orm import Session
 
 from app.repositories.image_metadata_repository import create_image_metadata
-from app.services.exif_service import extract_image_metadata
+from app.services.shared.exif_service import extract_image_metadata
 
 
 def enrich_metadata_case(metadata: dict[str, Any], *, include_path: bool = True) -> dict[str, Any]:

@@ -12,7 +12,7 @@ TEST_RESULTS_DIR = BACKEND_DIR / "test_results" / "test_visual_crossing_weather"
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
-from app.services.weather_service import fetch_visual_crossing_daily_weather
+from app.services.shared.weather_service import fetch_visual_crossing_daily_weather
 
 
 def _slugify(value: str) -> str:

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, File, UploadFile
 
 from app.schemas.image_metadata import ImageMetadataResponse
-from app.services.image_ingestion_service import ingest_uploaded_file
+from app.services.search.image_ingestion_service import ingest_uploaded_file
 
 router = APIRouter()
 

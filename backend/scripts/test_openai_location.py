@@ -11,7 +11,7 @@ TEST_RESULTS_DIR = BACKEND_DIR / "test_results" / "test_openai_location"
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
-from app.services.openai_location_service import analyze_image_location_with_openai
+from app.services.shared.openai_location_service import analyze_image_location_with_openai
 
 
 def main() -> int:

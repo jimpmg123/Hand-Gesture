@@ -1,8 +1,3 @@
-from app.services.search.image_ingestion_service import (
-    enrich_metadata_case,
-    extract_image_metadata_payload,
-    ingest_uploaded_file,
-)
 from app.services.shared.clip_service import (
     analyze_image_by_axes,
     analyze_image_gate,
@@ -30,15 +25,12 @@ __all__ = [
     "analyze_image_with_clip",
     "analyze_landmark_detection",
     "analyze_image_location_with_openai",
-    "enrich_metadata_case",
     "enrich_coordinates_with_place_context",
     "extract_text_with_cloud_vision",
     "extract_image_metadata",
-    "extract_image_metadata_payload",
     "fetch_visual_crossing_daily_weather",
     "fetch_visual_crossing_daily_weather_for_city",
     "geocode_address",
-    "ingest_uploaded_file",
     "reverse_geocode_coordinates",
     "search_nearby_pois",
 ]

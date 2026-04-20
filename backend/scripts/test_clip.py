@@ -11,7 +11,7 @@ TEST_RESULTS_DIR = BACKEND_DIR / "test_results" / "test_clip"
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
-from app.services.clip_service import analyze_image_by_axes, analyze_image_with_clip
+from app.services.shared.clip_service import analyze_image_by_axes, analyze_image_with_clip
 
 
 def main() -> int:

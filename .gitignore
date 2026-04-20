@@ -37,7 +37,6 @@ backend/__pycache__/
 backend/.env
 backend/storage/
 backend/test_results/
-qwen-code-main/
 
 # =========================
 # Editor / OS files

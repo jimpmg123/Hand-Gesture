@@ -11,7 +11,7 @@ TEST_RESULTS_DIR = BACKEND_DIR / "test_results" / "test_landmark_detection"
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
-from app.services.landmark_detection_service import analyze_landmark_detection
+from app.services.shared.landmark_detection_service import analyze_landmark_detection
 
 
 def main() -> int:

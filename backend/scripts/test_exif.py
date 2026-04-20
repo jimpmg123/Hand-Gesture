@@ -14,7 +14,7 @@ TEST_RESULTS_DIR = BACKEND_DIR / "test_results" / "test_exif"
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
-from app.services.exif_service import extract_image_metadata
+from app.services.shared.exif_service import extract_image_metadata
 
 
 def main() -> int:
