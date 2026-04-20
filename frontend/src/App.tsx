@@ -8,6 +8,7 @@ import { HomePage } from './app/pages/HomePage'
 import { ProfilePage } from './app/pages/ProfilePage'
 import { SearchPage } from './app/pages/SearchPage'
 import { SignInPage } from './app/pages/SignInPage'
+import { JournalPage } from './app/pages/JournalPage'
 import type { MockAccount, PageId, Role } from './app/types'
 
 const defaultSelectedContext = uploadedPhotos[1] ?? uploadedPhotos[0]
@@ -99,7 +100,9 @@ function App() {
           />
         )
       case 'gallery':
-        return <GalleryPage isLoggedIn={isLoggedIn} photos= {uploadedPhotos} onOpenPage={openPage} />
+        return <GalleryPage isLoggedIn={isLoggedIn} photos={uploadedPhotos} onOpenPage={openPage} />
+      case 'journal':
+        return <JournalPage />
       case 'profile':
         return <ProfilePage account={currentAccount} isLoggedIn={isLoggedIn} role={role} />
       case 'sign-in':
