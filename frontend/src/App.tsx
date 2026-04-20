@@ -10,7 +10,19 @@ import { ProfilePage } from './app/pages/ProfilePage'
 import { SearchPage } from './app/pages/SearchPage'
 import { SearchResultsPage } from './app/pages/SearchResultsPage'
 import { SignInPage } from './app/pages/SignInPage'
+import { TravelizeAnalysisPage } from './app/pages/TravelizeAnalysisPage'
+import { TravelizeImageInputPage } from './app/pages/TravelizeImageInputPage'
+import { TravelizeIntroPage } from './app/pages/TravelizeIntroPage'
+import { TravelizePlanPage } from './app/pages/TravelizePlanPage'
 import type { SearchSession } from './app/search/types'
+import {
+  createTravelizeGalleryItems,
+  createTravelizeUploadItems,
+  defaultTravelizeSetup,
+  maxTravelizeImages,
+  buildTravelizeAnalysisResults,
+} from './app/travelize/data'
+import type { TravelizeInputImage, TravelizeSetup } from './app/travelize/types'
 import type { MockAccount, PageId, Role } from './app/types'
 
 function App() {
@@ -20,6 +32,8 @@ function App() {
   const [currentAccount, setCurrentAccount] = useState<MockAccount>(defaultMockAccount)
   const [createdAccount, setCreatedAccount] = useState<MockAccount | null>(null)
   const [latestSearchSession, setLatestSearchSession] = useState<SearchSession | null>(null)
+  const [travelizeSetup, setTravelizeSetup] = useState<TravelizeSetup>(defaultTravelizeSetup)
+  const [travelizeImages, setTravelizeImages] = useState<TravelizeInputImage[]>([])
   const [isPending, startTransition] = useTransition()
   const {
     closeImage,
@@ -31,6 +45,15 @@ function App() {
     selectedGalleryGroup,
     selectedGalleryImage,
   } = useGalleryBrowser()
+  const travelizeResults = buildTravelizeAnalysisResults(travelizeImages, travelizeSetup.regionInput)
+  const travelizePlanKey = [
+    travelizeSetup.tripDays,
+    travelizeSetup.startDate,
+    travelizeSetup.wakeUpTime,
+    travelizeSetup.departureTime,
+    travelizeSetup.regionInput,
+    travelizeImages.map((image) => image.id).join('|'),
+  ].join('::')
 
   const openPage = (page: PageId) => {
     startTransition(() => {
@@ -56,6 +79,42 @@ function App() {
   const handleRunSearch = (session: SearchSession) => {
     setLatestSearchSession(session)
     openPage('search-results')
+  }
+
+  const mergeTravelizeImages = (incomingImages: TravelizeInputImage[]) => {
+    setTravelizeImages((current) => {
+      const nextImages = [...current]
+
+      incomingImages.forEach((image) => {
+        if (nextImages.length >= maxTravelizeImages) {
+          return
+        }
+
+        if (nextImages.some((existing) => existing.id === image.id)) {
+          return
+        }
+
+        nextImages.push(image)
+      })
+
+      return nextImages
+    })
+  }
+
+  const handleTravelizeSetupChange = (patch: Partial<TravelizeSetup>) => {
+    setTravelizeSetup((current) => ({ ...current, ...patch }))
+  }
+
+  const handleTravelizeUploads = (files: File[]) => {
+    mergeTravelizeImages(createTravelizeUploadItems(files))
+  }
+
+  const handleTravelizeGroupLoad = (group: (typeof galleryState)[number]) => {
+    mergeTravelizeImages(createTravelizeGalleryItems(group))
+  }
+
+  const handleTravelizeRemoveImage = (imageId: string) => {
+    setTravelizeImages((current) => current.filter((image) => image.id !== imageId))
   }
 
   const toggleRole = () => {
@@ -104,13 +163,52 @@ function App() {
   const renderActivePage = () => {
     switch (activePage) {
       case 'search':
-        return <SearchPage onRunSearch={handleRunSearch} />
+        return <SearchPage onRunSearch={handleRunSearch} onOpenPage={openPage} />
       case 'search-results':
         return (
           <SearchResultsPage
             isLoggedIn={isLoggedIn}
             searchSession={latestSearchSession}
             onOpenPage={openPage}
+          />
+        )
+      case 'travelize-1':
+        return (
+          <TravelizeIntroPage
+            setup={travelizeSetup}
+            onSetupChange={handleTravelizeSetupChange}
+            onNext={() => openPage('travelize-2')}
+            onOpenSearch={() => openPage('search')}
+          />
+        )
+      case 'travelize-2':
+        return (
+          <TravelizeImageInputPage
+            galleryGroups={galleryState}
+            selectedImages={travelizeImages}
+            onAddUploads={handleTravelizeUploads}
+            onLoadGalleryGroup={handleTravelizeGroupLoad}
+            onRemoveImage={handleTravelizeRemoveImage}
+            onBack={() => openPage('travelize-1')}
+            onAnalyze={() => openPage('travelize-3')}
+          />
+        )
+      case 'travelize-3':
+        return (
+          <TravelizeAnalysisPage
+            results={travelizeResults}
+            onBack={() => openPage('travelize-2')}
+            onNext={() => openPage('travelize-4')}
+          />
+        )
+      case 'travelize-4':
+        return (
+          <TravelizePlanPage
+            key={travelizePlanKey}
+            setup={travelizeSetup}
+            images={travelizeImages}
+            results={travelizeResults}
+            onBack={() => openPage('travelize-3')}
           />
         )
       case 'gallery':
@@ -163,7 +261,7 @@ function App() {
       case 'create-account':
         return <CreateAccountPage onCreateAccount={handleCreateAccount} onOpenPage={openPage} />
       default:
-        return <SearchPage onRunSearch={handleRunSearch} />
+        return <SearchPage onRunSearch={handleRunSearch} onOpenPage={openPage} />
     }
   }
 

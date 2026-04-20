@@ -9,6 +9,7 @@ import type {
 
 export const navItems: NavItem[] = [
   { id: 'search', label: 'Search', hint: 'travel-photo intake' },
+  { id: 'travelize-1', label: 'Travelize', hint: 'itinerary builder' },
   { id: 'gallery', label: 'Gallery', hint: 'my uploads' },
   { id: 'profile', label: 'Profile', hint: 'account + settings' },
 ]

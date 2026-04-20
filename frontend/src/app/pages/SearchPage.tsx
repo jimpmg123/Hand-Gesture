@@ -5,7 +5,7 @@ import { formatFileSize, maxUploadSizeBytes } from '../search/data'
 import type { SearchPageProps, SearchUploadItem } from '../search/types'
 import { getUploadValidationError } from '../search/utils'
 
-export function SearchPage({ onRunSearch }: SearchPageProps) {
+export function SearchPage({ onRunSearch, onOpenPage }: SearchPageProps) {
   const [countryHint, setCountryHint] = useState('')
   const [cityHint, setCityHint] = useState('')
   const [uploads, setUploads] = useState<SearchUploadItem[]>([])
@@ -135,6 +135,13 @@ export function SearchPage({ onRunSearch }: SearchPageProps) {
           {uploadError ? <p className="field-error">{uploadError}</p> : null}
 
           <div className="search-entry-footer">
+            <button
+              type="button"
+              className="button-secondary"
+              onClick={() => onOpenPage('travelize-1')}
+            >
+              Open Travelize
+            </button>
             <button
               type="button"
               className="button-primary"
