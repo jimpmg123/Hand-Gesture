@@ -10,6 +10,7 @@ export type PageId =
   | 'sign-in'
   | 'create-account'
   | 'images'
+  | 'journal';
 
 export type PageNavigator = (page: PageId) => void
 

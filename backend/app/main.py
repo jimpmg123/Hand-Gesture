@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.routers.health import router as health_router
 from app.routers.image import router as image_router
+from app.routers.journal import router as journal_router
 
 APP_TITLE = "Travel From Photo API"
 API_PREFIX = "/api"
@@ -33,6 +34,7 @@ def register_routes(app: FastAPI) -> None:
 
     app.include_router(health_router, prefix=API_PREFIX)
     app.include_router(image_router, prefix=API_PREFIX)
+    app.include_router(journal_router, prefix=API_PREFIX)
 
 
 def create_app() -> FastAPI:

@@ -12,6 +12,11 @@ export const navItems: NavItem[] = [
   { id: 'travelize-1', label: 'Travelize', hint: 'itinerary builder' },
   { id: 'gallery', label: 'Gallery', hint: 'my uploads' },
   { id: 'profile', label: 'Profile', hint: 'account + settings' },
+  {
+    id: 'journal',
+    label: 'Journal',
+    hint: 'Generate Travel Log'
+  }
 ]
 
 export const metrics: Metric[] = [

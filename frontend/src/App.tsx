@@ -6,6 +6,7 @@ import { useGalleryBrowser } from './app/hooks/useGalleryBrowser'
 import { CreateAccountPage } from './app/pages/CreateAccountPage'
 import { GalleryPage } from './app/pages/GalleryPage'
 import { ImagesPage } from './app/pages/ImagesPage'
+import { JournalPage } from './app/pages/JournalPage'
 import { ProfilePage } from './app/pages/ProfilePage'
 import { SearchPage } from './app/pages/SearchPage'
 import { SearchResultsPage } from './app/pages/SearchResultsPage'
@@ -16,11 +17,11 @@ import { TravelizeIntroPage } from './app/pages/TravelizeIntroPage'
 import { TravelizePlanPage } from './app/pages/TravelizePlanPage'
 import type { SearchSession } from './app/search/types'
 import {
+  buildTravelizeAnalysisResults,
   createTravelizeGalleryItems,
   createTravelizeUploadItems,
   defaultTravelizeSetup,
   maxTravelizeImages,
-  buildTravelizeAnalysisResults,
 } from './app/travelize/data'
 import type { TravelizeInputImage, TravelizeSetup } from './app/travelize/types'
 import type { MockAccount, PageId, Role } from './app/types'
@@ -45,6 +46,7 @@ function App() {
     selectedGalleryGroup,
     selectedGalleryImage,
   } = useGalleryBrowser()
+
   const travelizeResults = buildTravelizeAnalysisResults(travelizeImages, travelizeSetup.regionInput)
   const travelizePlanKey = [
     travelizeSetup.tripDays,
@@ -224,18 +226,22 @@ function App() {
             }}
           />
         )
+      case 'journal':
+        return <JournalPage />
       case 'images':
         if (!selectedGalleryGroup) {
-          return <GalleryPage
-            groups={galleryState}
-            isLoggedIn={isLoggedIn}
-            onOpenPage={openPage}
-            onRenameGroup={renameGroup}
-            onViewImages={(group) => {
-              openGroup(group)
-              openPage('images')
-            }}
-          />
+          return (
+            <GalleryPage
+              groups={galleryState}
+              isLoggedIn={isLoggedIn}
+              onOpenPage={openPage}
+              onRenameGroup={renameGroup}
+              onViewImages={(group) => {
+                openGroup(group)
+                openPage('images')
+              }}
+            />
+          )
         }
 
         return (
