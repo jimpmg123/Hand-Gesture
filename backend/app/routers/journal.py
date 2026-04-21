@@ -13,6 +13,76 @@ from app.services.shared.places_service import enrich_coordinates_with_place_con
 
 router = APIRouter()
 
+DESTINATION_POI_KEYWORDS = (
+    "tourist_attraction",
+    "market",
+    "historical",
+    "landmark",
+    "museum",
+    "park",
+    "shrine",
+    "temple",
+    "place_of_worship",
+    "church",
+    "monument",
+    "visitor_center",
+)
+
+FOOD_POI_KEYWORDS = (
+    "restaurant",
+    "cafe",
+    "bakery",
+    "meal_takeaway",
+    "meal_delivery",
+    "food",
+    "food_store",
+)
+
+
+def _address_first_token(formatted_address: str | None) -> str | None:
+    if not formatted_address:
+        return None
+
+    first_part = formatted_address.split(",")[0].strip()
+    return first_part or None
+
+
+def _normalize_place_types(place: dict[str, Any]) -> list[str]:
+    values = [place.get("primary_type"), *(place.get("types") or [])]
+    normalized: list[str] = []
+    for value in values:
+        if not value:
+            continue
+        normalized.append(str(value).strip().lower().replace(" ", "_"))
+    return normalized
+
+
+def _place_matches_keywords(place: dict[str, Any], keywords: tuple[str, ...]) -> bool:
+    normalized_types = _normalize_place_types(place)
+    return any(keyword in place_type for place_type in normalized_types for keyword in keywords)
+
+
+def _select_display_poi(observation: JournalObservation, place_context: dict[str, Any]) -> dict[str, Any]:
+    pois = place_context.get("pois") or []
+    top_poi = place_context.get("top_poi") or {}
+
+    destination_candidate = next(
+        (poi for poi in pois if _place_matches_keywords(poi, DESTINATION_POI_KEYWORDS)),
+        None,
+    )
+
+    if observation.scene_label == "food_photo":
+        if top_poi and _place_matches_keywords(top_poi, FOOD_POI_KEYWORDS):
+            return top_poi
+        if destination_candidate is not None:
+            return destination_candidate
+        return top_poi
+
+    if destination_candidate is not None:
+        return destination_candidate
+
+    return top_poi
+
 
 # EXIF 시간이 문자열로 들어오므로 Journal contracts에 맞는 datetime으로 변환한다.
 def _parse_captured_at(value: str | None) -> datetime | None:
@@ -78,11 +148,13 @@ def _enrich_observation_with_place_context(observation: JournalObservation) -> J
         observation.classification_reason = " ".join(reasons)
         return observation
 
-    top_poi = place_context.get("top_poi") or {}
+    selected_poi = _select_display_poi(observation, place_context)
     observation.country_snapshot = place_context.get("country")
     observation.city_snapshot = place_context.get("city")
-    observation.poi_name = top_poi.get("name")
-    observation.poi_primary_type = top_poi.get("primary_type")
+    observation.formatted_address = place_context.get("formatted_address")
+    observation.english_location_hint = _address_first_token(observation.formatted_address)
+    observation.poi_name = selected_poi.get("name")
+    observation.poi_primary_type = selected_poi.get("primary_type")
     observation.poi_distance_meters = None
     return observation
 

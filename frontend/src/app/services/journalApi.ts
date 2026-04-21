@@ -21,6 +21,8 @@ export type JournalPreviewObservation = {
   end_time: string
   city_snapshot: string | null
   country_snapshot: string | null
+  formatted_address: string | null
+  english_location_hint: string | null
   poi_name: string | null
   poi_primary_type: string | null
   scene_label: string | null
@@ -32,13 +34,18 @@ export type JournalPreviewSegment = {
   segment_id: string
   segment_order: number
   segment_type: string
+  is_inferred: boolean
   image_ids: number[]
   location_name: string | null
   city: string | null
   country: string | null
+  formatted_address: string | null
+  english_location_hint: string | null
   start_time: string
   end_time: string
-  duration_minutes: number
+  duration_minutes: number | null
+  travel_mode: string | null
+  travel_distance_km: number | null
   generated_text: string | null
   edited_text: string | null
 }

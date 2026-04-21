@@ -8,6 +8,8 @@ from app.routers.journal import router as journal_router
 APP_TITLE = "Travel From Photo API"
 API_PREFIX = "/api"
 FRONTEND_ORIGINS = [
+    "http://localhost:4173",
+    "http://127.0.0.1:4173",
     "http://localhost:5173",
     "http://127.0.0.1:5173",
 ]

@@ -1,36 +1,65 @@
 from __future__ import annotations
 
+import re
 from collections.abc import Iterable
 
 from app.services.journal.contracts import JournalObservation
 from app.services.journal.geo_utils import haversine_distance_meters
 
+# Journal segment classification starts from one observation and decides
+# whether it looks like stay, transit, or uncertain.
+# Time flow, coordinate distance, address head similarity, POI type,
+# scene label, and document type are all converted into scores.
+
 SAME_PLACE_RADIUS_METERS = 120.0
 MIN_STAY_REVISIT_GAP_SECONDS = 120.0
 TRANSIT_PATH_FACTOR = 1.25
 CLASSIFICATION_MARGIN = 0.20
+ADDRESS_SIMILAR_STAY_SCORE = 0.40
 
-DESTINATION_POI_TYPES = {
+# Google Places type values are not stable enough to justify exact matching.
+# Since the current design gives the same score either way,
+# keyword rules are simpler and easier to maintain.
+DESTINATION_POI_TYPE_KEYWORDS = (
+    "art_gallery",
+    "beach",
     "cafe",
+    "campground",
+    "church",
     "food",
-    "historic_site",
+    "gallery",
+    "historic",
+    "history",
+    "hotel",
     "lodging",
     "market",
+    "monument",
+    "mosque",
     "museum",
     "park",
+    "place_of_worship",
     "restaurant",
     "shrine",
+    "store",
+    "synagogue",
     "temple",
-    "tourist_attraction",
-}
+    "tourist",
+    "visitor",
+    "zoo",
+)
 
-TRANSIT_POI_TYPES = {
+TRANSIT_POI_TYPE_KEYWORDS = (
     "airport",
     "bus_station",
-    "subway_station",
-    "train_station",
-    "transit_station",
-}
+    "ferry",
+    "platform",
+    "rail",
+    "station",
+    "subway",
+    "terminal",
+    "train",
+    "transit",
+)
 
 STAY_DOCUMENT_TYPES = {
     "lodging_confirmation",
@@ -43,7 +72,7 @@ TRANSIT_DOCUMENT_TYPES = {
 }
 
 
-# observation 두 개 사이의 거리 계산용 내부 헬퍼다.
+# This is the basic geospatial comparison used across the classifier.
 def _distance_between(a: JournalObservation, b: JournalObservation) -> float:
     return haversine_distance_meters(
         a.center_latitude,
@@ -53,21 +82,56 @@ def _distance_between(a: JournalObservation, b: JournalObservation) -> float:
     )
 
 
-# 두 observation이 사실상 같은 장소인지 빠르게 판단한다.
+# Nearby observations within this radius are treated as same-place candidates.
 def _same_place_signal(a: JournalObservation, b: JournalObservation) -> tuple[bool, float]:
     distance = _distance_between(a, b)
-    is_same_place = distance <= SAME_PLACE_RADIUS_METERS
-    return is_same_place, distance
+    return distance <= SAME_PLACE_RADIUS_METERS, distance
 
 
-# POI type, scene label 같은 문자열을 규칙 계산 전에 정규화한다.
+# Places and labels come in with slightly different formatting,
+# so normalize them once before matching.
 def _normalize_type(value: str | None) -> str | None:
     if value is None:
         return None
     return value.strip().lower().replace(" ", "_")
 
 
-# POI, scene, document 신호를 stay / transit 점수로 바꿔준다.
+# POI type is only used as a hint.
+# We intentionally keep it broad and keyword-based.
+def _classify_poi_type_signal(poi_type: str | None) -> str | None:
+    normalized = _normalize_type(poi_type)
+    if normalized is None:
+        return None
+
+    if any(keyword in normalized for keyword in DESTINATION_POI_TYPE_KEYWORDS):
+        return "destination"
+    if any(keyword in normalized for keyword in TRANSIT_POI_TYPE_KEYWORDS):
+        return "transit"
+    return None
+
+
+# For large venues, exact coordinates can drift across gates or internal roads.
+# The first address token is used as a coarse same-venue hint.
+def _address_head(formatted_address: str | None) -> str | None:
+    if not formatted_address:
+        return None
+
+    head = formatted_address.split(",")[0].strip().lower()
+    normalized = re.sub(r"[^a-z0-9]+", " ", head).strip()
+    return normalized or None
+
+
+# If two observations share the same address head, they may belong
+# to the same large place even when the raw coordinates spread out.
+def _similar_address_head(a: JournalObservation, b: JournalObservation) -> bool:
+    a_head = _address_head(a.formatted_address)
+    b_head = _address_head(b.formatted_address)
+    if not a_head or not b_head:
+        return False
+    return a_head == b_head
+
+
+# POI, scene, and document signals are converted into stay/transit score deltas.
 def _score_labels(
     observation: JournalObservation,
     *,
@@ -75,14 +139,14 @@ def _score_labels(
     transit_score: float,
     reasons: list[str],
 ) -> tuple[float, float]:
-    poi_type = _normalize_type(observation.poi_primary_type)
     scene_label = _normalize_type(observation.scene_label)
     document_type = _normalize_type(observation.document_type)
+    poi_signal = _classify_poi_type_signal(observation.poi_primary_type)
 
-    if poi_type in DESTINATION_POI_TYPES:
+    if poi_signal == "destination":
         stay_score += 0.45
         reasons.append("Nearby POI looks destination-like.")
-    elif poi_type in TRANSIT_POI_TYPES:
+    elif poi_signal == "transit":
         transit_score += 0.55
         reasons.append("Nearby POI looks transit-related.")
 
@@ -109,7 +173,7 @@ def _score_labels(
     return stay_score, transit_score
 
 
-# observation 하나를 stay / transit / uncertain으로 분류한다.
+# This is the main scoring function used before segment building.
 def classify_observation(
     observation: JournalObservation,
     *,
@@ -130,23 +194,37 @@ def classify_observation(
 
     previous_same_place = False
     next_same_place = False
+    previous_similar_address = False
+    next_similar_address = False
 
     if previous_observation is not None:
-        previous_same_place, previous_distance = _same_place_signal(previous_observation, observation)
+        previous_same_place, _ = _same_place_signal(previous_observation, observation)
+        previous_similar_address = _similar_address_head(previous_observation, observation)
         time_gap = (observation.start_time - previous_observation.end_time).total_seconds()
+
         if previous_same_place and time_gap >= MIN_STAY_REVISIT_GAP_SECONDS:
             stay_score += 0.35
             reasons.append("Previous nearby observation after a time gap suggests a stay.")
+
+        if previous_similar_address and time_gap >= MIN_STAY_REVISIT_GAP_SECONDS:
+            stay_score += ADDRESS_SIMILAR_STAY_SCORE
+            reasons.append("Previous observation shares the same address head, suggesting the same venue.")
         elif not previous_same_place and time_gap <= 900:
             transit_score += 0.10
             reasons.append("Recent movement from a different place adds transit bias.")
 
     if next_observation is not None:
-        next_same_place, next_distance = _same_place_signal(observation, next_observation)
+        next_same_place, _ = _same_place_signal(observation, next_observation)
+        next_similar_address = _similar_address_head(observation, next_observation)
         time_gap = (next_observation.start_time - observation.end_time).total_seconds()
+
         if next_same_place and time_gap >= MIN_STAY_REVISIT_GAP_SECONDS:
             stay_score += 0.35
             reasons.append("Next nearby observation after a time gap suggests a stay.")
+
+        if next_similar_address and time_gap >= MIN_STAY_REVISIT_GAP_SECONDS:
+            stay_score += ADDRESS_SIMILAR_STAY_SCORE
+            reasons.append("Next observation shares the same address head, suggesting the same venue.")
         elif not next_same_place and time_gap <= 900:
             transit_score += 0.10
             reasons.append("Upcoming movement to a different place adds transit bias.")
@@ -154,6 +232,9 @@ def classify_observation(
     if previous_same_place and next_same_place:
         stay_score += 0.20
         reasons.append("Nearby observations on both sides strongly suggest a stay.")
+    elif previous_similar_address and next_similar_address:
+        stay_score += 0.20
+        reasons.append("Address heads match on both sides, suggesting one large place.")
 
     if previous_observation is not None and next_observation is not None:
         prev_to_current = _distance_between(previous_observation, observation)
@@ -190,7 +271,7 @@ def classify_observation(
     return observation
 
 
-# observation 전체 시퀀스를 순서대로 돌면서 앞뒤 맥락까지 반영해 분류한다.
+# Classification always uses ordered observations so the previous/next context is available.
 def classify_observations(observations: Iterable[JournalObservation]) -> list[JournalObservation]:
     ordered_observations = sorted(observations, key=lambda item: item.observation_order)
     classified: list[JournalObservation] = []

@@ -51,9 +51,15 @@ class JournalObservation:
     image_count: int
     country_snapshot: str | None = None
     city_snapshot: str | None = None
+    formatted_address: str | None = None
+    english_location_hint: str | None = None
+    poi_place_id: str | None = None
     poi_name: str | None = None
     poi_primary_type: str | None = None
     poi_distance_meters: float | None = None
+    nearest_poi_name: str | None = None
+    nearest_poi_primary_type: str | None = None
+    nearest_poi_formatted_address: str | None = None
     scene_label: str | None = None
     scene_confidence: float | None = None
     ocr_text: str | None = None
@@ -79,14 +85,20 @@ class JournalSegment:
     segment_id: str
     segment_order: int
     segment_type: str
+    is_inferred: bool
     observation_ids: list[str]
     image_ids: list[int]
+    poi_place_id: str | None
     location_name: str | None
     country: str | None
     city: str | None
     start_time: datetime
     end_time: datetime
-    duration_minutes: int
+    duration_minutes: int | None
+    formatted_address: str | None = None
+    english_location_hint: str | None = None
+    travel_mode: str | None = None
+    travel_distance_km: float | None = None
     generated_text: str | None = None
     edited_text: str | None = None
 
