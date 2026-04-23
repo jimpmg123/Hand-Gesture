@@ -6,7 +6,9 @@ export type PageId =
   | 'sign-in'
   | 'create-account'
   | 'images'
-  | 'journal';
+  | 'journal'
+  | 'board'
+  | 'travlizer';
 
 export type PageNavigator = (page: PageId) => void
 

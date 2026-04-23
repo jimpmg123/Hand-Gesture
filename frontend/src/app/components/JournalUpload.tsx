@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import exifr from 'exifr';
+import { Images, AlertCircle } from 'lucide-react';
 
 interface JournalUploadProps {
   onGenerate: (files: File[]) => void;
@@ -72,37 +73,42 @@ export const JournalUpload: React.FC<JournalUploadProps> = ({ onGenerate }) => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-      <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#26215C', marginBottom: '10px' }}>새로운 여행 일지 만들기</h2>
-      <p style={{ fontSize: '14px', color: '#666', marginBottom: '30px' }}>당신의 사진을 올리면 AI가 분석하여 타임라인을 만들어줍니다.</p>
+    <div className="flex flex-col items-center text-center animate-fadeIn">
+      <h2 className="text-2xl md:text-3xl font-serif text-gray-900 mb-2">Create New Journal</h2>
+      <p className="text-gray-500 text-sm md:text-base mb-8">Upload your photos and let AI build your travel timeline.</p>
 
-      <div style={{ width: '100%', border: '2px dashed #AFA9EC', borderRadius: '12px', padding: '50px 20px', backgroundColor: '#EEEDFE', cursor: 'pointer', position: 'relative', marginBottom: '20px', transition: 'all 0.3s ease' }}>
+      <div className="relative w-full border-2 border-dashed border-teal-300 rounded-3xl p-12 md:p-16 bg-gray-50 hover:bg-teal-50/50 transition-all duration-300 cursor-pointer group">
         <input
           type="file"
           multiple
           accept="image/jpeg, image/png, image/webp"
           onChange={handleFileChange}
-          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }}
+          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
         />
-        <div style={{ pointerEvents: 'none' }}>
-          <div style={{ fontSize: '40px', marginBottom: '15px' }}>📸</div>
-          <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#534AB7' }}>Select Pictures (2~20장)</div>
-          <div style={{ fontSize: '12px', color: '#888', marginTop: '8px' }}>Drag or Drop Here</div>
+        <div className="pointer-events-none flex flex-col items-center">
+          <div className="bg-white p-4 rounded-full shadow-sm mb-4 group-hover:scale-110 transition-transform">
+            <Images className="w-10 h-10 text-teal-600" />
+          </div>
+          <div className="text-lg font-bold text-teal-800 mb-1">Select Pictures (2~20 photos)</div>
+          <div className="text-sm text-gray-400">Drag or Drop Here</div>
         </div>
       </div>
 
-      {errorMessage && <p style={{ color: '#e74c3c', fontWeight: 'bold', marginTop: '10px', fontSize: '14px' }}>{errorMessage}</p>}
+      {errorMessage && <p className="text-red-500 font-bold mt-4 text-sm">{errorMessage}</p>}
 
       {showExifModal && (
-        <div style={{ width: '100%', marginTop: '10px', padding: '20px', backgroundColor: '#FFF5F5', border: '1px solid #FEB2B2', borderRadius: '12px' }}>
-          <p style={{ color: '#C53030', fontWeight: 'bold', marginBottom: '15px', fontSize: '15px' }}>
-            메타데이터(위치/시간)가 없는 사진이 {missingExifFiles.length}장 포함되어 있습니다.
-          </p>
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-            <button onClick={handleSkipMissingExif} style={{ padding: '10px 16px', backgroundColor: '#CBD5E0', color: '#2D3748', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
+        <div className="w-full mt-6 p-5 bg-red-50 border border-red-200 rounded-2xl animate-fadeIn">
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <AlertCircle className="w-5 h-5 text-red-600" />
+            <p className="text-red-700 font-bold text-sm md:text-base">
+              메타데이터(위치/시간)가 없는 사진이 {missingExifFiles.length}장 포함되어 있습니다.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3 justify-center">
+            <button onClick={handleSkipMissingExif} className="px-5 py-2.5 bg-white text-gray-700 border border-gray-300 rounded-xl font-bold text-sm hover:bg-gray-50 transition-colors shadow-sm">
               Skip and Continue
             </button>
-            <button onClick={handleReupload} style={{ padding: '10px 16px', backgroundColor: '#E53E3E', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
+            <button onClick={handleReupload} className="px-5 py-2.5 bg-red-600 text-white rounded-xl font-bold text-sm hover:bg-red-700 transition-colors shadow-sm">
               Upload Again
             </button>
           </div>
@@ -110,14 +116,13 @@ export const JournalUpload: React.FC<JournalUploadProps> = ({ onGenerate }) => {
       )}
 
       {selectedFiles.length > 0 && !showExifModal && (
-        <div style={{ width: '100%', marginTop: '20px' }}>
-          <div style={{ marginBottom: '20px', fontSize: '15px', color: '#333' }}>
-            <span>Ready to Upload: </span>
-            <strong style={{ color: '#534AB7', fontSize: '18px' }}>{selectedFiles.length}장</strong>
+        <div className="w-full mt-8 animate-fadeIn">
+          <div className="mb-6 text-gray-700 font-medium">
+            Ready to Upload: <strong className="text-teal-700 text-xl ml-1">{selectedFiles.length}장</strong>
           </div>
           <button
             onClick={() => onGenerate(selectedFiles)}
-            style={{ width: '100%', padding: '16px', backgroundColor: '#534AB7', color: 'white', fontSize: '16px', fontWeight: 'bold', border: 'none', borderRadius: '12px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(83, 74, 183, 0.3)' }}
+            className="w-full bg-[#2d6a5f] text-white rounded-xl px-8 py-4 font-bold transition-all shadow-lg flex items-center justify-center text-lg hover:bg-[#1a3f38] hover:shadow-xl hover:-translate-y-0.5"
           >
             Generate Journal
           </button>
