@@ -17,6 +17,10 @@ export function GalleryPage({
   onRenameGroup,
   onViewImages,
 }: GalleryPageProps) {
+  const totalImages = groups.reduce((sum, group) => sum + group.images.length, 0)
+  const foodGroups = groups.filter((group) => group.type.toLowerCase().includes('food')).length
+  const cityCount = new Set(groups.map((group) => group.city)).size
+
   if (!isLoggedIn) {
     return (
       <section className="locked-shell">
@@ -24,15 +28,15 @@ export function GalleryPage({
           <p className="eyebrow">Gallery</p>
           <h2>Private upload gallery</h2>
           <p>
-            This page is reserved for signed-in users so they can review their own uploaded photos,
-            open the detected place, and jump into guidance.
+            This page is reserved for signed-in users so they can review their uploaded photos,
+            organize memory groups, and reopen image-based travel results.
           </p>
           <div className="hero-actions">
-            <button type="button" className="button-primary" onClick={() => onOpenPage('profile')}>
-              Go to Profile
+            <button type="button" className="button-primary" onClick={() => onOpenPage('sign-in')}>
+              Sign in to continue
             </button>
-            <button type="button" className="button-secondary" onClick={() => onOpenPage('search')}>
-              Back to Search
+            <button type="button" className="button-secondary" onClick={() => onOpenPage('home')}>
+              Back to Home
             </button>
           </div>
         </div>
@@ -42,42 +46,85 @@ export function GalleryPage({
 
   return (
     <div className="stack-xl">
-      <section className="section-heading">
-        <div>
+      <section className="gallery-hero panel">
+        <div className="gallery-hero-copy">
           <p className="eyebrow">Gallery</p>
-          <h2>My uploaded photos</h2>
+          <h2>My uploaded photo groups</h2>
+          <p className="section-copy">
+            Review grouped memories, rename collections, and open a dedicated image browser for each
+            city or trip context.
+          </p>
+
+          <div className="badge-row">
+            <span className="pill">Signed-in only</span>
+            <span className="pill">Private image browser</span>
+            <span className="pill">Ready for backend upload data</span>
+          </div>
         </div>
-        <p className="section-copy">
-          Signed-in users can review grouped photo memories by city, rename collections, and open
-          each group as a dedicated image browser.
-        </p>
+
+        <div className="gallery-metric-grid">
+          <div className="gallery-metric-card">
+            <span className="result-label">Groups</span>
+            <strong>{groups.length}</strong>
+            <p>Organized collections built from uploaded travel memories.</p>
+          </div>
+          <div className="gallery-metric-card">
+            <span className="result-label">Images</span>
+            <strong>{totalImages}</strong>
+            <p>Total thumbnails currently visible across all private groups.</p>
+          </div>
+          <div className="gallery-metric-card">
+            <span className="result-label">Cities</span>
+            <strong>{cityCount}</strong>
+            <p>Distinct city contexts represented in the current gallery state.</p>
+          </div>
+          <div className="gallery-metric-card">
+            <span className="result-label">Food sets</span>
+            <strong>{foodGroups}</strong>
+            <p>Collections that can reopen the restaurant or cuisine search flow.</p>
+          </div>
+        </div>
       </section>
 
       <section className="gallery-layout">
-        <div className="gallery-grid gallery-grid--groups">
-          {groups.map((group) => (
-            <PhotoCard
-              key={group.id}
-              group={group}
-              onRename={onRenameGroup}
-              onViewImages={onViewImages}
+        <div className="gallery-main-column">
+          <div className="panel content-panel">
+            <SectionIntro
+              title="Grouped memories"
+              detail="Each card keeps one city or trip cluster so the user can browse images with less clutter."
             />
-          ))}
+          </div>
+
+          <div className="gallery-grid gallery-grid--groups">
+            {groups.map((group) => (
+              <PhotoCard
+                key={group.id}
+                group={group}
+                onRename={onRenameGroup}
+                onViewImages={onViewImages}
+              />
+            ))}
+          </div>
         </div>
 
         <aside className="panel sidebar-panel">
           <SectionIntro
             title="Gallery notes"
-            detail="This sidebar keeps private-user behavior visible in the shell."
+            detail="This sidebar keeps the behavior of the gallery clear before backend upload data is connected."
           />
           <ul className="bullet-list">
-            <li>Groups are organized by city and can be renamed from the card itself.</li>
+            <li>Each group can be renamed directly from the card.</li>
             <li>View Images opens a dedicated image browser with modal preview controls.</li>
-            <li>Food memories can still reopen the restaurant-discovery branch from Search.</li>
+            <li>Food-related groups can connect back to restaurant search later.</li>
+            <li>This layout can later receive real upload records from the backend.</li>
           </ul>
+
           <div className="callout">
-            <strong>Next backend handoff</strong>
-            <p>Replace these mock groups with actual uploads, predictions, and navigation links.</p>
+            <strong>Next implementation step</strong>
+            <p>
+              Replace mock groups with uploaded image records, EXIF-based metadata, and AI-supported
+              destination results.
+            </p>
           </div>
         </aside>
       </section>

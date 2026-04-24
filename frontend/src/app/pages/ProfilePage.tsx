@@ -72,6 +72,11 @@ export function ProfilePage({ account, isLoggedIn, role }: ProfilePageProps) {
               <strong>2 draft guides</strong>
               <p>Reserved for future directions and shareable itineraries.</p>
             </div>
+            <div className="result-card">
+              <span className="result-label">Gallery access</span>
+              <strong>4 grouped collections</strong>
+              <p>Open your private gallery to review uploads, rename sets, and browse saved images.</p>
+            </div>
           </div>
         </article>
 
