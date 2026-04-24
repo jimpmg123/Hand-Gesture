@@ -35,8 +35,8 @@ export function GalleryPage({
             <button type="button" className="button-primary" onClick={() => onOpenPage('sign-in')}>
               Sign in to continue
             </button>
-            <button type="button" className="button-secondary" onClick={() => onOpenPage('home')}>
-              Back to Home
+            <button type="button" className="button-secondary" onClick={() => onOpenPage('profile')}>
+              Open Profile
             </button>
           </div>
         </div>
@@ -116,15 +116,11 @@ export function GalleryPage({
             <li>Each group can be renamed directly from the card.</li>
             <li>View Images opens a dedicated image browser with modal preview controls.</li>
             <li>Food-related groups can connect back to restaurant search later.</li>
-            <li>This layout can later receive real upload records from the backend.</li>
+            <li>Current backend route is mock-based and can be swapped with DB data later.</li>
           </ul>
-
           <div className="callout">
-            <strong>Next implementation step</strong>
-            <p>
-              Replace mock groups with uploaded image records, EXIF-based metadata, and AI-supported
-              destination results.
-            </p>
+            <strong>Next backend handoff</strong>
+            <p>Replace mock groups with uploaded image records, EXIF metadata, and AI-assisted results.</p>
           </div>
         </aside>
       </section>

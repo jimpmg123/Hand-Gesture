@@ -4,12 +4,13 @@ from datetime import datetime
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import Any
+import re
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
 
 from app.services.journal import JournalImageInput, JournalObservation, build_journal_timeline
 from app.services.shared.exif_service import extract_image_metadata
-from app.services.shared.places_service import enrich_coordinates_with_place_context
+from app.services.shared.places_service import enrich_coordinates_with_place_context, search_nearby_pois
 
 router = APIRouter()
 
@@ -38,6 +39,27 @@ FOOD_POI_KEYWORDS = (
     "food_store",
 )
 
+ANCHOR_POI_RADIUS_METERS = 1500.0
+ANCHOR_POI_MAX_RESULTS = 20
+ANCHOR_SUBFEATURE_KEYWORDS = (
+    "gate",
+    "office",
+    "security",
+    "stable",
+    "statue",
+    "store",
+    "shop",
+    "cafe",
+    "restaurant",
+    "snack",
+    "dessert",
+    "bakery",
+    "coffee",
+    "burger",
+    "ramen",
+    "gallery",
+)
+
 
 def _address_first_token(formatted_address: str | None) -> str | None:
     if not formatted_address:
@@ -55,6 +77,94 @@ def _normalize_place_types(place: dict[str, Any]) -> list[str]:
             continue
         normalized.append(str(value).strip().lower().replace(" ", "_"))
     return normalized
+
+
+def _extract_anchor_name(place_name: str | None) -> str | None:
+    if not place_name:
+        return None
+
+    patterns = (
+        r"([^\s()]+市場)",
+        r"([A-Za-z][A-Za-z0-9' -]*?\bMarket\b)",
+        r"([A-Za-z0-9']+-dera)",
+        r"([^\s()]+寺)",
+        r"([^\s()]+神社)",
+        r"([A-Za-z][A-Za-z0-9' -]*?\bTemple\b)",
+        r"([A-Za-z][A-Za-z0-9' -]*?\bShrine\b)",
+    )
+
+    for pattern in patterns:
+        match = re.search(pattern, place_name, flags=re.IGNORECASE)
+        if match:
+            return match.group(1).strip()
+
+    return None
+
+
+def _anchor_candidate_score(place: dict[str, Any]) -> int:
+    name = str(place.get("name") or "")
+    lower_name = name.lower()
+    score = 0
+
+    if _place_matches_keywords(place, DESTINATION_POI_KEYWORDS):
+        score += 4
+
+    extracted_anchor = _extract_anchor_name(name)
+    if extracted_anchor:
+        score += 10
+
+    if any(keyword in lower_name for keyword in ANCHOR_SUBFEATURE_KEYWORDS):
+        score -= 4
+
+    if _place_matches_keywords(place, FOOD_POI_KEYWORDS):
+        score -= 3
+
+    if place.get("primary_type") in {"service", "store", "general_store", "association_or_organization"}:
+        score -= 3
+
+    return score
+
+
+def _select_anchor_poi(
+    place_context: dict[str, Any],
+    *,
+    latitude: float,
+    longitude: float,
+) -> dict[str, Any]:
+    broader_nearby = search_nearby_pois(
+        latitude,
+        longitude,
+        radius_meters=ANCHOR_POI_RADIUS_METERS,
+        max_result_count=ANCHOR_POI_MAX_RESULTS,
+        language_code="en",
+    )
+
+    merged_candidates: list[dict[str, Any]] = []
+    seen_ids: set[str] = set()
+    for place in [*(place_context.get("pois") or []), *(broader_nearby.get("places") or [])]:
+        place_id = place.get("id")
+        if place_id and place_id in seen_ids:
+            continue
+        if place_id:
+            seen_ids.add(place_id)
+        merged_candidates.append(place)
+
+    best_candidate: dict[str, Any] | None = None
+    best_score = -999
+    for candidate in merged_candidates:
+        score = _anchor_candidate_score(candidate)
+        if score > best_score:
+            best_score = score
+            best_candidate = candidate
+
+    if best_candidate is None:
+        return place_context.get("top_poi") or {}
+
+    anchor_name = _extract_anchor_name(best_candidate.get("name")) or best_candidate.get("name")
+    return {
+        **best_candidate,
+        "name": anchor_name,
+    }
 
 
 def _place_matches_keywords(place: dict[str, Any], keywords: tuple[str, ...]) -> bool:
@@ -148,14 +258,24 @@ def _enrich_observation_with_place_context(observation: JournalObservation) -> J
         observation.classification_reason = " ".join(reasons)
         return observation
 
+    nearest_poi = place_context.get("top_poi") or {}
     selected_poi = _select_display_poi(observation, place_context)
+    anchor_poi = _select_anchor_poi(
+        place_context,
+        latitude=observation.center_latitude,
+        longitude=observation.center_longitude,
+    )
     observation.country_snapshot = place_context.get("country")
     observation.city_snapshot = place_context.get("city")
     observation.formatted_address = place_context.get("formatted_address")
     observation.english_location_hint = _address_first_token(observation.formatted_address)
-    observation.poi_name = selected_poi.get("name")
-    observation.poi_primary_type = selected_poi.get("primary_type")
+    observation.poi_place_id = anchor_poi.get("id")
+    observation.poi_name = anchor_poi.get("name") or selected_poi.get("name")
+    observation.poi_primary_type = anchor_poi.get("primary_type") or selected_poi.get("primary_type")
     observation.poi_distance_meters = None
+    observation.nearest_poi_name = nearest_poi.get("name")
+    observation.nearest_poi_primary_type = nearest_poi.get("primary_type")
+    observation.nearest_poi_formatted_address = nearest_poi.get("formatted_address")
     return observation
 
 
