@@ -61,7 +61,6 @@ export function TopBar({
           </span>
           <span className="brand-anchor-copy">
             <strong>Travel From Photo</strong>
-            <small>Web UI preview</small>
           </span>
         </button>
 

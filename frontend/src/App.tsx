@@ -15,7 +15,7 @@ import { TravelizeAnalysisPage } from './app/pages/TravelizeAnalysisPage'
 import { TravelizeImageInputPage } from './app/pages/TravelizeImageInputPage'
 import { TravelizeIntroPage } from './app/pages/TravelizeIntroPage'
 import { TravelizePlanPage } from './app/pages/TravelizePlanPage'
-import type { SearchSession } from './app/search/types'
+import type { SearchRun } from './app/search/types'
 import {
   buildTravelizeAnalysisResults,
   createTravelizeGalleryItems,
@@ -32,7 +32,7 @@ function App() {
   const [role, setRole] = useState<Role>('traveler')
   const [currentAccount, setCurrentAccount] = useState<MockAccount>(defaultMockAccount)
   const [createdAccount, setCreatedAccount] = useState<MockAccount | null>(null)
-  const [latestSearchSession, setLatestSearchSession] = useState<SearchSession | null>(null)
+  const [latestSearchSession, setLatestSearchSession] = useState<SearchRun | null>(null)
   const [travelizeSetup, setTravelizeSetup] = useState<TravelizeSetup>(defaultTravelizeSetup)
   const [travelizeImages, setTravelizeImages] = useState<TravelizeInputImage[]>([])
   const [isPending, startTransition] = useTransition()
@@ -78,7 +78,7 @@ function App() {
     openPage('sign-in')
   }
 
-  const handleRunSearch = (session: SearchSession) => {
+  const handleRunSearch = (session: SearchRun) => {
     setLatestSearchSession(session)
     openPage('search-results')
   }

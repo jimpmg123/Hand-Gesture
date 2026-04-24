@@ -1,5 +1,4 @@
 import { SearchResults } from '../search/components/SearchResults'
-import { buildSearchResultBundle } from '../search/data'
 import type { SearchResultsPageProps } from '../search/types'
 
 export function SearchResultsPage({
@@ -16,8 +15,8 @@ export function SearchResultsPage({
             <h2>No search run yet</h2>
           </div>
           <p className="section-copy">
-            Upload images and run the search flow first. This temporary results page is driven by
-            the latest frontend search session.
+            Upload images and run search first. The result screen is filled from the latest backend
+            image-analysis run.
           </p>
         </section>
 
@@ -36,7 +35,7 @@ export function SearchResultsPage({
 
   return (
     <SearchResults
-      bundle={buildSearchResultBundle(searchSession)}
+      bundle={searchSession.bundle}
       isLoggedIn={isLoggedIn}
       onOpenPage={onOpenPage}
     />

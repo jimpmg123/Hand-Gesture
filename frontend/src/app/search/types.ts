@@ -10,29 +10,84 @@ export type SearchUploadItem = {
   fileName: string
   fileSizeBytes: number
   fileSizeLabel: string
+  previewUrl: string
 }
 
-export type SearchSession = {
+export type SearchApiImageResponse = {
+  file_name?: string
+  captured_at?: string | null
+  gps?: {
+    latitude?: number | null
+    longitude?: number | null
+  } | null
+  city?: string | null
+  summary?: unknown
+  has_gps?: boolean
+  metadata_case?: string
+  resolution_status?: 'resolved' | 'failed'
+  resolution_source?: 'exif_gps' | 'landmark_detection' | 'openai_location' | 'clip_gate' | 'search_pipeline' | null
+  failure_reason?: string | null
+  resolved_location?: {
+    status?: string
+    source?: string | null
+    latitude?: number | null
+    longitude?: number | null
+    formatted_address?: string | null
+    country?: string | null
+    city?: string | null
+    region?: string | null
+    place_name?: string | null
+    failure_reason?: string | null
+  } | null
+  clip_gate?: {
+    label?: string
+    score?: number
+    decision?: string
+    is_location_candidate?: boolean
+    reason?: string
+  } | null
+}
+
+export type SearchUploadAnalysis =
+  | {
+      uploadId: string
+      ok: true
+      response: SearchApiImageResponse
+    }
+  | {
+      uploadId: string
+      ok: false
+      error: string
+    }
+
+export type SearchRun = {
   countryHint: string
   cityHint: string
   uploads: SearchUploadItem[]
+  bundle: SearchResultBundle
 }
 
 export type SearchResolutionSource =
-  | 'EXIF metadata'
-  | 'Landmark recognition'
-  | 'CLIP + OpenAI fallback'
-  | 'Location inference failed'
+  | 'GPS metadata'
+  | 'Landmark detection'
+  | 'OpenAI fallback'
+  | 'CLIP gate rejection'
+  | 'Missing GPS metadata'
+  | 'Upload request failed'
 
 export type SearchImageResult = {
   id: string
   imageName: string
+  previewUrl: string
   status: 'saved' | 'failed'
   source: SearchResolutionSource
   summary: string
   coordinates: string | null
   address: string | null
-  backendRecord: string
+  latitude: number | null
+  longitude: number | null
+  resolutionPath: string
+  resolutionNote: string
 }
 
 export type SearchResultBundle = {
@@ -41,17 +96,15 @@ export type SearchResultBundle = {
   topResolved: SearchImageResult | null
   results: SearchImageResult[]
   summaryCards: { label: string; value: string; detail: string }[]
-  processingNotes: { label: string; value: string }[]
-  serviceNotes: { label: string; value: string }[]
 }
 
 export type SearchPageProps = {
-  onRunSearch: (session: SearchSession) => void
+  onRunSearch: (session: SearchRun) => void
   onOpenPage: (page: PageId) => void
 }
 
 export type SearchResultsPageProps = {
   isLoggedIn: boolean
-  searchSession: SearchSession | null
+  searchSession: SearchRun | null
   onOpenPage: (page: PageId) => void
 }

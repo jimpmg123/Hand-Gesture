@@ -1,4 +1,4 @@
-import { SectionIntro } from '../../components/SectionIntro'
+import { SearchResultMap } from './SearchResultMap'
 import type { PageNavigator } from '../../types'
 import type { SearchResultBundle } from '../types'
 
@@ -11,7 +11,7 @@ type SearchResultsProps = {
 export function SearchResults({ bundle, isLoggedIn, onOpenPage }: SearchResultsProps) {
   return (
     <section className="panel content-panel search-results-shell">
-      <section className="section-heading results-heading">
+      <section className="section-heading results-heading results-heading--large">
         <div>
           <p className="eyebrow">Search Results</p>
           <h2>{bundle.heading}</h2>
@@ -41,9 +41,9 @@ export function SearchResults({ bundle, isLoggedIn, onOpenPage }: SearchResultsP
         </div>
       </section>
 
-      <div className="results-summary-grid">
+      <div className="results-summary-grid results-summary-grid--large">
         {bundle.summaryCards.map((card) => (
-          <article key={card.label} className="result-card">
+          <article key={card.label} className="result-card result-card--large">
             <span className="metric-label">{card.label}</span>
             <strong className="metric-value">{card.value}</strong>
             <p>{card.detail}</p>
@@ -51,111 +51,98 @@ export function SearchResults({ bundle, isLoggedIn, onOpenPage }: SearchResultsP
         ))}
       </div>
 
-      <div className="analysis-hero">
-        <div className="map-placeholder">
+      <div className="analysis-hero analysis-hero--search">
+        <div className="map-placeholder map-placeholder--search">
           <div className="map-placeholder-head">
-            <span className="pill">Placeholder Map</span>
+            <span className="pill">Resolved locations</span>
             <span className="pill">
-              {bundle.topResolved ? 'coordinates ready' : 'no valid coordinates'}
+              {bundle.topResolved ? `${bundle.results.filter((result) => result.status === 'saved').length} saved` : 'No saved coordinates'}
             </span>
           </div>
-          <div className="map-placeholder-center">
-            <strong>
-              {bundle.topResolved
-                ? 'Temporary map placeholder for the highest-confidence resolved image'
-                : 'No image passed the save rule in this temporary run'}
-            </strong>
-            <p>
-              {bundle.topResolved?.address ??
-                'A resolved address will appear here after a successful run.'}
-            </p>
-            <span>{bundle.topResolved?.coordinates ?? 'No coordinates saved'}</span>
+          <SearchResultMap results={bundle.results} />
+          <div className="search-uploaded-strip">
+            {bundle.results.map((result) => (
+              <article key={result.id} className={`search-uploaded-strip-card search-uploaded-strip-card--${result.status}`}>
+                <img src={result.previewUrl} alt={result.imageName} className="search-uploaded-strip-image" />
+                <div className="search-uploaded-strip-copy">
+                  <strong>{result.imageName}</strong>
+                  <span>{result.status === 'saved' ? result.address ?? result.coordinates : 'No coordinates returned'}</span>
+                </div>
+              </article>
+            ))}
           </div>
         </div>
 
-        <aside className="focus-card">
-          <span className="result-label">Highest confidence</span>
-          <h3>{bundle.topResolved?.imageName ?? 'No resolved image yet'}</h3>
-          <p>{bundle.topResolved?.source ?? 'Awaiting successful location resolution'}</p>
-          <div className="confidence-pill">
-            {bundle.topResolved ? 'saved to backend' : 'temporary failure'}
-          </div>
-          <p className="focus-card-copy">
-            {bundle.topResolved?.summary ??
-              'If every image fails validation, the final product should show a visible failure state instead of storing coordinates.'}
-          </p>
+        <aside className="focus-card focus-card--search">
+          <span className="result-label">Top resolved image</span>
+          {bundle.topResolved ? (
+            <>
+              <img
+                src={bundle.topResolved.previewUrl}
+                alt={bundle.topResolved.imageName}
+                className="search-focus-image"
+              />
+              <h3>{bundle.topResolved.imageName}</h3>
+              <p>{bundle.topResolved.address ?? bundle.topResolved.coordinates}</p>
+              <div className="confidence-pill">{bundle.topResolved.resolutionPath}</div>
+              <p className="focus-card-copy">{bundle.topResolved.summary}</p>
+            </>
+          ) : (
+            <>
+              <h3>No resolved image yet</h3>
+              <p>Every uploaded image failed location recovery in this run.</p>
+            </>
+          )}
         </aside>
       </div>
 
       <div className="candidate-stack">
-        <SectionIntro
-          title="Per-image processing output"
-          detail="Each uploaded image shows whether EXIF, landmark recognition, CLIP + OpenAI fallback, or failure determined the final state."
-        />
-        <div className="image-result-list">
+        <div className="section-heading compact-section-heading">
+          <div>
+            <p className="eyebrow">Uploaded Images</p>
+            <h3>Per-image results</h3>
+          </div>
+          <p className="section-copy">
+            Each card shows the uploaded image, the resolved location if any, and which backend path produced the result.
+          </p>
+        </div>
+
+        <div className="image-result-list image-result-list--visual">
           {bundle.results.map((result) => (
-            <article key={result.id} className="image-result-card">
-              <div className="image-result-header">
-                <div>
-                  <strong>{result.imageName}</strong>
-                  <p>{result.source}</p>
-                </div>
-                <span className={`result-state-pill result-state-pill--${result.status}`}>
-                  {result.status === 'saved' ? 'Stored' : 'Failed'}
-                </span>
-              </div>
+            <article key={result.id} className="image-result-card image-result-card--visual">
+              <img src={result.previewUrl} alt={result.imageName} className="image-result-preview" />
 
-              <p className="image-result-summary">{result.summary}</p>
+              <div className="image-result-body">
+                <div className="image-result-header image-result-header--visual">
+                  <div>
+                    <strong>{result.imageName}</strong>
+                    <p>{result.address ?? 'No resolved address'}</p>
+                  </div>
+                  <span className={`result-state-pill result-state-pill--${result.status}`}>
+                    {result.status === 'saved' ? 'Resolved' : 'Failed'}
+                  </span>
+                </div>
 
-              <div className="image-result-grid">
-                <div className="details-placeholder-item">
-                  <strong>Coordinates</strong>
-                  <p>{result.coordinates ?? 'No coordinates stored'}</p>
-                </div>
-                <div className="details-placeholder-item">
-                  <strong>Address</strong>
-                  <p>{result.address ?? 'Address unavailable because location inference failed'}</p>
-                </div>
-                <div className="details-placeholder-item image-result-grid-span">
-                  <strong>Backend image record</strong>
-                  <p>{result.backendRecord}</p>
+                <p className="image-result-summary image-result-summary--large">{result.summary}</p>
+
+                <div className="image-result-grid image-result-grid--large">
+                  <div className="details-placeholder-item">
+                    <strong>Resolution path</strong>
+                    <p>{result.resolutionPath}</p>
+                  </div>
+                  <div className="details-placeholder-item">
+                    <strong>Coordinates</strong>
+                    <p>{result.coordinates ?? 'No coordinates returned'}</p>
+                  </div>
+                  <div className="details-placeholder-item image-result-grid-span">
+                    <strong>How this result was produced</strong>
+                    <p>{result.resolutionNote}</p>
+                  </div>
                 </div>
               </div>
             </article>
           ))}
         </div>
-      </div>
-
-      <div className="details-layout">
-        <article className="details-card">
-          <SectionIntro
-            title="Processing rules"
-            detail="This is the intended backend sequence for EXIF, landmark recognition, CLIP, and OpenAI based location inference."
-          />
-          <div className="details-placeholder-list">
-            {bundle.processingNotes.map((item) => (
-              <div key={item.label} className="details-placeholder-item">
-                <strong>{item.label}</strong>
-                <p>{item.value}</p>
-              </div>
-            ))}
-          </div>
-        </article>
-
-        <article className="details-card">
-          <SectionIntro
-            title="External services in this flow"
-            detail="The final backend flow uses these services to decide whether a coordinate can be written to the image record."
-          />
-          <div className="details-placeholder-list">
-            {bundle.serviceNotes.map((item) => (
-              <div key={item.label} className="details-placeholder-item">
-                <strong>{item.label}</strong>
-                <p>{item.value}</p>
-              </div>
-            ))}
-          </div>
-        </article>
       </div>
 
       <div className="search-results-footer">
