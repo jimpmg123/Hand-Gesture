@@ -17,6 +17,65 @@ Our system allows users to upload travel photos, upload food photos, or enter a 
 
 ## Additional Documentation
 
+### How to Run Locally
+
+If you want to view the website locally, there are a few setup steps in addition to opening it in a browser.
+
+#### Prerequisites
+
+- Node.js
+- Python 3.10+
+- Docker
+
+#### 1. Start the database
+
+From the repository root:
+
+```bash
+docker compose up -d
+```
+
+#### 2. Configure backend environment variables
+
+Create `backend/.env` based on `backend/.env.example` and fill in the required values.
+
+Required/used variables include:
+
+- `OPENAI_API_KEY`
+- `GOOGLE_MAPS_API_KEY`
+- `GOOGLE_CLOUD_VISION_API_KEY`
+- `GOOGLE_APPLICATION_CREDENTIALS`
+- `VISUAL_CROSSING_API_KEY`
+- `DATABASE_URL`
+
+#### 3. Run the backend
+
+```bash
+cd backend
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
+```
+
+#### 4. Run the frontend
+
+In a separate terminal:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+#### 5. Open the application
+
+- Frontend: `http://localhost:5173`
+- Backend API docs: `http://localhost:8000/docs`
+
+#### Notes
+
+- Some features depend on external APIs and may not work unless the corresponding API keys are configured.
+- Uploaded files are served from the backend `uploads/` directory.
+
 - [Project Details](docs/project-details.md)
 - [System Architecture](docs/system-architecture.md)
 - [API Overview](docs/api-overview.md)
