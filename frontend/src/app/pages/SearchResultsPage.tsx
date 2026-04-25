@@ -5,6 +5,7 @@ export function SearchResultsPage({
   isLoggedIn,
   searchSession,
   onOpenPage,
+  onRetryFailedImage,
 }: SearchResultsPageProps) {
   if (!searchSession) {
     return (
@@ -38,6 +39,7 @@ export function SearchResultsPage({
       bundle={searchSession.bundle}
       isLoggedIn={isLoggedIn}
       onOpenPage={onOpenPage}
+      onRetryFailedImage={onRetryFailedImage}
     />
   )
 }

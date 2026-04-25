@@ -9,6 +9,7 @@ from app.services.search.hint_validation_service import (
 )
 from app.services.shared.geocoding_service import geocode_address
 from app.services.shared.openai_location_service import analyze_image_location_with_openai
+from app.services.shared.ocr_service import extract_text_with_cloud_vision
 
 
 def _build_geocode_query(
@@ -38,8 +39,22 @@ def resolve_location_with_openai(
     image_path: str | Path,
     *,
     hints: SearchHintContext,
+    user_hint: str | None = None,
 ) -> tuple[SearchLocationResolution | None, dict | None]:
-    result = analyze_image_location_with_openai(image_path)
+    ocr_text: str | None = None
+    try:
+        ocr_result = extract_text_with_cloud_vision(image_path, include_raw_response=False)
+        ocr_text = ocr_result.get("extracted_text") or None
+    except Exception:
+        ocr_text = None
+
+    result = analyze_image_location_with_openai(
+        image_path,
+        country_hint=hints.normalized_country(),
+        city_hint=hints.normalized_city(),
+        user_hint=user_hint or hints.normalized_user_hint(),
+        ocr_text=ocr_text,
+    )
     geocode_query = _build_geocode_query(
         place_name=result.get("place_name"),
         formatted_address=result.get("formatted_address"),
@@ -64,7 +79,12 @@ def resolve_location_with_openai(
                 region=geocoded.get("region"),
                 place_name=result.get("place_name"),
                 failure_reason=build_country_mismatch_reason(geocoded.get("country"), hints),
-                metadata={"openai_result": result, "geocode_query": geocode_query},
+                metadata={
+                    "openai_result": result,
+                    "geocode_query": geocode_query,
+                    "user_hint_used": user_hint or hints.normalized_user_hint(),
+                    "ocr_text_used": bool(ocr_text and ocr_text.strip()),
+                },
             ),
             result,
         )
@@ -80,7 +100,12 @@ def resolve_location_with_openai(
             city=geocoded.get("city"),
             region=geocoded.get("region"),
             place_name=result.get("place_name"),
-            metadata={"openai_result": result, "geocode_query": geocode_query},
+            metadata={
+                "openai_result": result,
+                "geocode_query": geocode_query,
+                "user_hint_used": user_hint or hints.normalized_user_hint(),
+                "ocr_text_used": bool(ocr_text and ocr_text.strip()),
+            },
         ),
         result,
     )

@@ -72,6 +72,8 @@ function toSearchImageResult(
       longitude: null,
       resolutionPath: 'Request failed',
       resolutionNote: 'The backend did not return any analysis payload for this image.',
+      userHintUsed: null,
+      ocrTextUsed: false,
     }
   }
 
@@ -89,6 +91,8 @@ function toSearchImageResult(
       longitude: null,
       resolutionPath: 'Request failed',
       resolutionNote: 'The HTTP request failed before image analysis could complete.',
+      userHintUsed: null,
+      ocrTextUsed: false,
     }
   }
 
@@ -99,11 +103,21 @@ function toSearchImageResult(
   const hasCoordinates = latitude != null && longitude != null
   const visualSummary = summarizeVisualResult(analysis.response.summary)
   const resolutionSource = analysis.response.resolution_source
+  const userHintUsed =
+    analysis.response.resolved_location?.metadata?.user_hint_used ||
+    analysis.response.openai_candidate?.user_hint_used ||
+    null
+  const ocrTextUsed = Boolean(
+    analysis.response.resolved_location?.metadata?.ocr_text_used ||
+      analysis.response.openai_candidate?.ocr_text_used,
+  )
   const sourceLabel =
     resolutionSource === 'landmark_detection'
       ? 'Landmark detection'
       : resolutionSource === 'openai_location'
-        ? 'OpenAI fallback'
+        ? userHintUsed
+          ? 'OpenAI retry'
+          : 'OpenAI fallback'
         : resolutionSource === 'clip_gate'
           ? 'CLIP gate rejection'
           : analysis.response.has_gps
@@ -129,7 +143,12 @@ function toSearchImageResult(
       latitude,
       longitude,
       resolutionPath: sourceLabel,
-      resolutionNote: `This result was accepted through ${sourceLabel.toLowerCase()}.`,
+      resolutionNote:
+        sourceLabel === 'OpenAI retry'
+          ? `This result was resolved through OpenAI using your hint${ocrTextUsed ? ' plus OCR text' : ''}.`
+          : `This result was accepted through ${sourceLabel.toLowerCase()}${ocrTextUsed ? ' with OCR context' : ''}.`,
+      userHintUsed,
+      ocrTextUsed,
     }
   }
 
@@ -153,6 +172,8 @@ function toSearchImageResult(
       analysis.response.failure_reason ||
       resolvedLocation?.failure_reason ||
       'No coordinates were returned by the current search pipeline.',
+    userHintUsed,
+    ocrTextUsed,
   }
 }
 
@@ -179,7 +200,7 @@ export function buildSearchResultBundle(params: {
   return {
     heading: 'Image search results',
     subheading:
-      'Each uploaded image shows whether EXIF GPS coordinates were available, which city label was recovered, and what visual summary was produced.',
+      'Each uploaded image shows whether location recovery succeeded and which backend path produced the result.',
     topResolved: savedResults[0] ?? null,
     results,
     summaryCards: [
@@ -191,17 +212,17 @@ export function buildSearchResultBundle(params: {
       {
         label: 'Resolved',
         value: `${savedResults.length}`,
-        detail: 'These images returned coordinates through EXIF GPS or fallback inference.',
+        detail: 'These images returned coordinates through metadata, landmark detection, or OpenAI.',
       },
       {
         label: 'Unresolved',
         value: `${failedResults}`,
-        detail: 'These images did not return coordinates in the current backend flow.',
+        detail: 'Only unresolved images expose a retry hint field for another OpenAI pass.',
       },
       {
         label: 'Search hints',
         value: locationLabel,
-        detail: 'Country and city are optional frontend hints in the current image search flow.',
+        detail: 'Country and city remain optional search hints for both the first run and retry.',
       },
     ],
   }

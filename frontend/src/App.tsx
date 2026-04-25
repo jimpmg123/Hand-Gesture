@@ -15,6 +15,8 @@ import { TravelizeAnalysisPage } from './app/pages/TravelizeAnalysisPage'
 import { TravelizeImageInputPage } from './app/pages/TravelizeImageInputPage'
 import { TravelizeIntroPage } from './app/pages/TravelizeIntroPage'
 import { TravelizePlanPage } from './app/pages/TravelizePlanPage'
+import { retryFailedSearchUpload } from './app/search/api'
+import { buildSearchResultBundle } from './app/search/data'
 import type { SearchRun } from './app/search/types'
 import {
   buildTravelizeAnalysisResults,
@@ -81,6 +83,40 @@ function App() {
   const handleRunSearch = (session: SearchRun) => {
     setLatestSearchSession(session)
     openPage('search-results')
+  }
+
+  const handleRetryFailedSearchImage = async (uploadId: string, userHint: string) => {
+    if (!latestSearchSession) {
+      return
+    }
+
+    const targetUpload = latestSearchSession.uploads.find((upload) => upload.id === uploadId)
+    if (!targetUpload) {
+      return
+    }
+
+    const nextAnalysis = await retryFailedSearchUpload(targetUpload, {
+      countryHint: latestSearchSession.countryHint,
+      cityHint: latestSearchSession.cityHint,
+      userHint,
+    })
+
+    const nextAnalyses = latestSearchSession.analyses.map((analysis) =>
+      analysis.uploadId === uploadId ? nextAnalysis : analysis,
+    )
+
+    const nextSession: SearchRun = {
+      ...latestSearchSession,
+      analyses: nextAnalyses,
+      bundle: buildSearchResultBundle({
+        countryHint: latestSearchSession.countryHint,
+        cityHint: latestSearchSession.cityHint,
+        uploads: latestSearchSession.uploads,
+        analyses: nextAnalyses,
+      }),
+    }
+
+    setLatestSearchSession(nextSession)
   }
 
   const mergeTravelizeImages = (incomingImages: TravelizeInputImage[]) => {
@@ -172,6 +208,7 @@ function App() {
             isLoggedIn={isLoggedIn}
             searchSession={latestSearchSession}
             onOpenPage={openPage}
+            onRetryFailedImage={handleRetryFailedSearchImage}
           />
         )
       case 'travelize-1':

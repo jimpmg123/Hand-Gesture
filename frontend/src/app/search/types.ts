@@ -11,6 +11,7 @@ export type SearchUploadItem = {
   fileSizeBytes: number
   fileSizeLabel: string
   previewUrl: string
+  file: File
 }
 
 export type SearchApiImageResponse = {
@@ -38,6 +39,10 @@ export type SearchApiImageResponse = {
     region?: string | null
     place_name?: string | null
     failure_reason?: string | null
+    metadata?: {
+      user_hint_used?: string | null
+      ocr_text_used?: boolean
+    } | null
   } | null
   clip_gate?: {
     label?: string
@@ -45,6 +50,12 @@ export type SearchApiImageResponse = {
     decision?: string
     is_location_candidate?: boolean
     reason?: string
+  } | null
+  openai_candidate?: {
+    place_name?: string | null
+    formatted_address?: string | null
+    user_hint_used?: string | null
+    ocr_text_used?: boolean
   } | null
 }
 
@@ -64,12 +75,14 @@ export type SearchRun = {
   countryHint: string
   cityHint: string
   uploads: SearchUploadItem[]
+  analyses: SearchUploadAnalysis[]
   bundle: SearchResultBundle
 }
 
 export type SearchResolutionSource =
   | 'GPS metadata'
   | 'Landmark detection'
+  | 'OpenAI retry'
   | 'OpenAI fallback'
   | 'CLIP gate rejection'
   | 'Missing GPS metadata'
@@ -88,6 +101,8 @@ export type SearchImageResult = {
   longitude: number | null
   resolutionPath: string
   resolutionNote: string
+  userHintUsed: string | null
+  ocrTextUsed: boolean
 }
 
 export type SearchResultBundle = {
@@ -107,4 +122,5 @@ export type SearchResultsPageProps = {
   isLoggedIn: boolean
   searchSession: SearchRun | null
   onOpenPage: (page: PageId) => void
+  onRetryFailedImage: (uploadId: string, userHint: string) => Promise<void>
 }

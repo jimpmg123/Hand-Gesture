@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 import { SearchResultMap } from './SearchResultMap'
 import type { PageNavigator } from '../../types'
 import type { SearchResultBundle } from '../types'
@@ -6,9 +8,32 @@ type SearchResultsProps = {
   bundle: SearchResultBundle
   isLoggedIn: boolean
   onOpenPage: PageNavigator
+  onRetryFailedImage: (uploadId: string, userHint: string) => Promise<void>
 }
 
-export function SearchResults({ bundle, isLoggedIn, onOpenPage }: SearchResultsProps) {
+export function SearchResults({
+  bundle,
+  isLoggedIn,
+  onOpenPage,
+  onRetryFailedImage,
+}: SearchResultsProps) {
+  const [retryHints, setRetryHints] = useState<Record<string, string>>({})
+  const [retryingId, setRetryingId] = useState<string | null>(null)
+
+  const handleRetry = async (uploadId: string) => {
+    const hint = retryHints[uploadId]?.trim()
+    if (!hint) {
+      return
+    }
+
+    setRetryingId(uploadId)
+    try {
+      await onRetryFailedImage(uploadId, hint)
+    } finally {
+      setRetryingId(null)
+    }
+  }
+
   return (
     <section className="panel content-panel search-results-shell">
       <section className="section-heading results-heading results-heading--large">
@@ -139,6 +164,39 @@ export function SearchResults({ bundle, isLoggedIn, onOpenPage }: SearchResultsP
                     <p>{result.resolutionNote}</p>
                   </div>
                 </div>
+
+                {result.status === 'failed' ? (
+                  <div className="search-retry-panel">
+                    <label className="field field--retry">
+                      <span>Add a hint for retry</span>
+                      <input
+                        type="text"
+                        value={retryHints[result.id] ?? ''}
+                        onChange={(event) =>
+                          setRetryHints((current) => ({
+                            ...current,
+                            [result.id]: event.target.value,
+                          }))
+                        }
+                        placeholder="e.g. Kyoto subway ticket, near Gion, museum pass in Manhattan"
+                      />
+                    </label>
+                    <div className="search-retry-panel-actions">
+                      <p>
+                        This retry sends the image, your hint, and any OCR text to OpenAI with
+                        higher weight on your hint.
+                      </p>
+                      <button
+                        type="button"
+                        className="button-secondary"
+                        disabled={!retryHints[result.id]?.trim() || retryingId === result.id}
+                        onClick={() => void handleRetry(result.id)}
+                      >
+                        {retryingId === result.id ? 'Retrying...' : 'Retry with hint'}
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
               </div>
             </article>
           ))}

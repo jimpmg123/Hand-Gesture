@@ -8,6 +8,7 @@ from typing import Any
 class SearchHintContext:
     country_hint: str | None = None
     city_hint: str | None = None
+    user_hint: str | None = None
 
     def normalized_country(self) -> str | None:
         value = (self.country_hint or "").strip()
@@ -15,6 +16,10 @@ class SearchHintContext:
 
     def normalized_city(self) -> str | None:
         value = (self.city_hint or "").strip()
+        return value or None
+
+    def normalized_user_hint(self) -> str | None:
+        value = (self.user_hint or "").strip()
         return value or None
 
 

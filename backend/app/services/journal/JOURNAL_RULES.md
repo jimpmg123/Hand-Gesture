@@ -399,7 +399,7 @@ The preview route currently runs with:
 
 - place enrichment enabled
 - CLIP scene classification enabled
-- OCR + document classification disabled
+- OCR enrichment disabled by default
 
 This means preview is currently focused on:
 
@@ -409,7 +409,7 @@ This means preview is currently focused on:
 - scene-based stay/transit scoring
 - segment building
 
-but not yet on full document reasoning.
+but not yet on OCR-backed document context.
 
 ## 11. Known Limitations
 

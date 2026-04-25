@@ -9,7 +9,6 @@ export function SearchPage({ onRunSearch }: SearchPageProps) {
   const [countryHint, setCountryHint] = useState('')
   const [cityHint, setCityHint] = useState('')
   const [uploads, setUploads] = useState<SearchUploadItem[]>([])
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [uploadError, setUploadError] = useState('')
 
@@ -33,14 +32,12 @@ export function SearchPage({ onRunSearch }: SearchPageProps) {
     if (firstInvalidFile) {
       uploads.forEach((upload) => URL.revokeObjectURL(upload.previewUrl))
       setUploads([])
-      setSelectedFiles([])
       setUploadError(getUploadValidationError(firstInvalidFile) ?? 'Image upload failed.')
       event.target.value = ''
       return
     }
 
     uploads.forEach((upload) => URL.revokeObjectURL(upload.previewUrl))
-    setSelectedFiles(files)
     setUploads(
       files.map((file, index) => ({
         id: `${file.name}-${file.size}-${index}`,
@@ -48,6 +45,7 @@ export function SearchPage({ onRunSearch }: SearchPageProps) {
         fileSizeBytes: file.size,
         fileSizeLabel: formatFileSize(file.size),
         previewUrl: URL.createObjectURL(file),
+        file,
       })),
     )
     setUploadError('')
@@ -66,7 +64,7 @@ export function SearchPage({ onRunSearch }: SearchPageProps) {
     try {
       const country = countryHint.trim()
       const city = cityHint.trim()
-      const analyses = await analyzeSearchUploads(selectedFiles, uploads, {
+      const analyses = await analyzeSearchUploads(uploads, {
         countryHint: country,
         cityHint: city,
       })
@@ -75,6 +73,7 @@ export function SearchPage({ onRunSearch }: SearchPageProps) {
         countryHint: country,
         cityHint: city,
         uploads,
+        analyses,
         bundle: buildSearchResultBundle({
           countryHint: country,
           cityHint: city,

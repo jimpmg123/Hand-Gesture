@@ -332,7 +332,7 @@ async def preview_journal(files: list[UploadFile] = File(...)):
             journal_inputs,
             observation_enrichers=[_enrich_observation_with_place_context],
             run_clip_classification=True,
-            run_document_classification=False,
+            run_ocr_enrichment=False,
         )
         return _build_preview_response(timeline)
     finally:

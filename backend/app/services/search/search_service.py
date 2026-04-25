@@ -96,10 +96,12 @@ async def analyze_uploaded_search_image(
     *,
     country_hint: str | None = None,
     city_hint: str | None = None,
+    user_hint: str | None = None,
+    force_openai_retry: bool = False,
     db: Session | None = None,
 ) -> SearchImageAnalysis:
     suffix = Path(file.filename or "upload.bin").suffix
-    hints = SearchHintContext(country_hint=country_hint, city_hint=city_hint)
+    hints = SearchHintContext(country_hint=country_hint, city_hint=city_hint, user_hint=user_hint)
     temp_path: Path | None = None
 
     try:
@@ -125,7 +127,11 @@ async def analyze_uploaded_search_image(
             analysis.apply_resolution(resolution)
             return analysis
 
-        if analysis.clip_gate and not analysis.clip_gate.get("is_location_candidate"):
+        if (
+            analysis.clip_gate
+            and not analysis.clip_gate.get("is_location_candidate")
+            and not force_openai_retry
+        ):
             analysis.apply_resolution(
                 _build_failed_resolution(
                     analysis.clip_gate.get("reason")
@@ -136,19 +142,24 @@ async def analyze_uploaded_search_image(
             analysis.city = "Unknown Location"
             return analysis
 
-        try:
-            landmark_resolution, top_landmark = resolve_location_from_landmark(temp_path, hints=hints)
-            analysis.landmark_candidate = top_landmark
-            if landmark_resolution and landmark_resolution.status == "resolved":
-                analysis.apply_resolution(landmark_resolution)
-                return analysis
-            if landmark_resolution and landmark_resolution.failure_reason:
-                analysis.failure_reason = landmark_resolution.failure_reason
-        except Exception as exc:
-            analysis.failure_reason = f"Landmark detection failed: {exc}"
+        if not force_openai_retry:
+            try:
+                landmark_resolution, top_landmark = resolve_location_from_landmark(temp_path, hints=hints)
+                analysis.landmark_candidate = top_landmark
+                if landmark_resolution and landmark_resolution.status == "resolved":
+                    analysis.apply_resolution(landmark_resolution)
+                    return analysis
+                if landmark_resolution and landmark_resolution.failure_reason:
+                    analysis.failure_reason = landmark_resolution.failure_reason
+            except Exception as exc:
+                analysis.failure_reason = f"Landmark detection failed: {exc}"
 
         try:
-            openai_resolution, openai_candidate = resolve_location_with_openai(temp_path, hints=hints)
+            openai_resolution, openai_candidate = resolve_location_with_openai(
+                temp_path,
+                hints=hints,
+                user_hint=user_hint,
+            )
             analysis.openai_candidate = openai_candidate
             if openai_resolution and openai_resolution.status == "resolved":
                 analysis.apply_resolution(openai_resolution)

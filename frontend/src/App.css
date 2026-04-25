@@ -1274,6 +1274,44 @@
   font-size: 1.05rem;
 }
 
+.search-retry-panel {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(217, 119, 6, 0.18);
+  background: rgba(255, 248, 236, 0.92);
+}
+
+.field--retry {
+  gap: 10px;
+}
+
+.field--retry span {
+  font-size: 0.95rem;
+}
+
+.field--retry input {
+  min-height: 52px;
+  font-size: 0.98rem;
+  border-color: rgba(217, 119, 6, 0.16);
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.search-retry-panel-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+}
+
+.search-retry-panel-actions p {
+  margin: 0;
+  max-width: 42rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
 .image-result-header p,
 .image-result-summary {
   color: var(--muted);
@@ -2194,6 +2232,11 @@
   .search-results-footer,
   .travelize-page-actions {
     width: 100%;
+  }
+
+  .search-retry-panel-actions {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .button-primary,
