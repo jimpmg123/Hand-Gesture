@@ -22,7 +22,7 @@ PLACES_FIELD_MASK = ",".join(
 )
 
 
-# Places / Geocoding 호출 전에 Google Maps API 키가 있는지 확인한다.
+# Verify that a Google Maps API key is configured before calling Places or Geocoding APIs.
 def _require_api_key() -> str:
     if not GOOGLE_MAPS_API_KEY:
         raise RuntimeError(
@@ -32,7 +32,7 @@ def _require_api_key() -> str:
     return GOOGLE_MAPS_API_KEY
 
 
-# HTTP POST 결과를 JSON으로 읽는 공통 헬퍼다.
+# Shared helper for reading JSON from HTTP POST responses.
 def _load_json_post(url: str, *, headers: dict[str, str], payload: dict[str, Any]) -> dict[str, Any]:
     request = Request(
         url,
@@ -44,7 +44,7 @@ def _load_json_post(url: str, *, headers: dict[str, str], payload: dict[str, Any
         return json.loads(response.read().decode("utf-8"))
 
 
-# Places API (New) Nearby Search로 observation 근처 POI를 조회한다.
+# Query nearby POIs around an observation using Places API (New) Nearby Search.
 def search_nearby_pois(
     latitude: float,
     longitude: float,
@@ -113,7 +113,7 @@ def search_nearby_pois(
     }
 
 
-# 좌표 하나에 대해 주소 정보와 nearby POI를 한 번에 묶어 반환한다.
+# Return address data and nearby POIs together for a single coordinate.
 def enrich_coordinates_with_place_context(
     latitude: float,
     longitude: float,

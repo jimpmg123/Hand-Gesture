@@ -194,7 +194,7 @@ def _select_display_poi(observation: JournalObservation, place_context: dict[str
     return top_poi
 
 
-# EXIF 시간이 문자열로 들어오므로 Journal contracts에 맞는 datetime으로 변환한다.
+# Parse string EXIF timestamps into the datetime format expected by the Journal contracts.
 def _parse_captured_at(value: str | None) -> datetime | None:
     if not value:
         return None
@@ -212,7 +212,7 @@ def _parse_captured_at(value: str | None) -> datetime | None:
         return None
 
 
-# 업로드 파일 여러 장을 JournalImageInput 목록으로 바꾼다.
+# Convert uploaded files into a list of JournalImageInput objects.
 async def _build_journal_inputs(files: list[UploadFile]) -> tuple[list[JournalImageInput], list[Path]]:
     journal_inputs: list[JournalImageInput] = []
     temp_paths: list[Path] = []
@@ -245,7 +245,7 @@ async def _build_journal_inputs(files: list[UploadFile]) -> tuple[list[JournalIm
     return journal_inputs, temp_paths
 
 
-# observation 중심 좌표 기준으로 city/country/POI를 붙인다.
+# Attach city, country, and POI context using the observation center coordinates.
 def _enrich_observation_with_place_context(observation: JournalObservation) -> JournalObservation:
     try:
         place_context = enrich_coordinates_with_place_context(
@@ -279,7 +279,7 @@ def _enrich_observation_with_place_context(observation: JournalObservation) -> J
     return observation
 
 
-# 프론트에는 임시 파일 경로 대신, timeline 구조와 식별 정보만 돌려준다.
+# Return timeline structure and identifiers to the frontend without exposing temp file paths.
 def _serialize_datetime(value: Any) -> Any:
     return value.isoformat() if isinstance(value, datetime) else value
 

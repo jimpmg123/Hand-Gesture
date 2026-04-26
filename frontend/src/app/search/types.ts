@@ -92,7 +92,7 @@ export type SearchImageResult = {
   id: string
   imageName: string
   previewUrl: string
-  status: 'saved' | 'failed'
+  status: 'saved' | 'warning' | 'failed'
   source: SearchResolutionSource
   summary: string
   coordinates: string | null

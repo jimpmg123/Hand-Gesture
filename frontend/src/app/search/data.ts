@@ -18,14 +18,6 @@ export function formatFileSize(bytes: number): string {
   return `${megabytes.toFixed(1)} MB`
 }
 
-function formatHintLocation(countryHint: string, cityHint: string): string {
-  if (cityHint && countryHint) {
-    return `${cityHint}, ${countryHint}`
-  }
-
-  return cityHint || countryHint || 'No hint provided'
-}
-
 function formatCoordinates(latitude: number, longitude: number): string {
   return `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
 }
@@ -107,6 +99,8 @@ function toSearchImageResult(
     analysis.response.resolved_location?.metadata?.user_hint_used ||
     analysis.response.openai_candidate?.user_hint_used ||
     null
+  const openaiPlaceName =
+    analysis.response.resolved_location?.place_name || analysis.response.openai_candidate?.place_name || null
   const ocrTextUsed = Boolean(
     analysis.response.resolved_location?.metadata?.ocr_text_used ||
       analysis.response.openai_candidate?.ocr_text_used,
@@ -130,23 +124,30 @@ function toSearchImageResult(
       : null)
 
   if (hasCoordinates) {
+    const isApproximateOpenAi =
+      resolutionSource === 'openai_location' && !openaiPlaceName
+
     return {
       id: upload.id,
       imageName: analysis.response.file_name || upload.fileName,
       previewUrl: upload.previewUrl,
-      status: 'saved',
+      status: isApproximateOpenAi ? 'warning' : 'saved',
       source: sourceLabel,
       summary:
-        visualSummary || `${sourceLabel} resolved coordinates and returned a location label.`,
+        isApproximateOpenAi
+          ? visualSummary || 'OpenAI only recovered an approximate city-level location for this image.'
+          : visualSummary || `${sourceLabel} resolved coordinates and returned a location label.`,
       coordinates: formatCoordinates(latitude, longitude),
       address: locationLabel,
       latitude,
       longitude,
       resolutionPath: sourceLabel,
       resolutionNote:
-        sourceLabel === 'OpenAI retry'
-          ? `This result was resolved through OpenAI using your hint${ocrTextUsed ? ' plus OCR text' : ''}.`
-          : `This result was accepted through ${sourceLabel.toLowerCase()}${ocrTextUsed ? ' with OCR context' : ''}.`,
+        isApproximateOpenAi
+          ? `OpenAI did not return an exact place name, so this point is treated as an approximate warning${ocrTextUsed ? ' using OCR context' : ''}.`
+          : sourceLabel === 'OpenAI retry'
+            ? `This result was resolved through OpenAI using your hint${ocrTextUsed ? ' plus OCR text' : ''}.`
+            : `This result was accepted through ${sourceLabel.toLowerCase()}${ocrTextUsed ? ' with OCR context' : ''}.`,
       userHintUsed,
       ocrTextUsed,
     }
@@ -183,8 +184,7 @@ export function buildSearchResultBundle(params: {
   uploads: SearchUploadItem[]
   analyses: SearchUploadAnalysis[]
 }): SearchResultBundle {
-  const { analyses, cityHint, countryHint, uploads } = params
-  const locationLabel = formatHintLocation(countryHint, cityHint)
+  const { analyses, countryHint, uploads } = params
 
   const results = uploads.map((upload) =>
     toSearchImageResult(
@@ -195,13 +195,14 @@ export function buildSearchResultBundle(params: {
   )
 
   const savedResults = results.filter((result) => result.status === 'saved')
-  const failedResults = results.length - savedResults.length
+  const warningResults = results.filter((result) => result.status === 'warning')
+  const failedResults = results.filter((result) => result.status === 'failed')
 
   return {
     heading: 'Image search results',
     subheading:
       'Each uploaded image shows whether location recovery succeeded and which backend path produced the result.',
-    topResolved: savedResults[0] ?? null,
+    topResolved: savedResults[0] ?? warningResults[0] ?? null,
     results,
     summaryCards: [
       {
@@ -210,19 +211,19 @@ export function buildSearchResultBundle(params: {
         detail: 'All selected images were sent to the backend image search route.',
       },
       {
-        label: 'Resolved',
+        label: 'Exact matches',
         value: `${savedResults.length}`,
-        detail: 'These images returned coordinates through metadata, landmark detection, or OpenAI.',
+        detail: 'These images returned coordinates with a specific location result.',
+      },
+      {
+        label: 'Warnings',
+        value: `${warningResults.length}`,
+        detail: 'These images mapped only to an approximate city-level result.',
       },
       {
         label: 'Unresolved',
-        value: `${failedResults}`,
+        value: `${failedResults.length}`,
         detail: 'Only unresolved images expose a retry hint field for another OpenAI pass.',
-      },
-      {
-        label: 'Search hints',
-        value: locationLabel,
-        detail: 'Country and city remain optional search hints for both the first run and retry.',
       },
     ],
   }

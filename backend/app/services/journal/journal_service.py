@@ -13,7 +13,7 @@ from app.services.journal.segment_classifier_service import classify_observation
 ObservationEnricher = Callable[[JournalObservation], JournalObservation]
 
 
-# Journal 코어 파이프라인 전체를 한 번에 묶어 실행한다.
+# Run the full Journal core pipeline in one pass.
 def build_journal_timeline(
     images: Iterable[JournalImageInput],
     *,

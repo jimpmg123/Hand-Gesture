@@ -11,19 +11,21 @@ from app.services.shared.geocoding_service import geocode_address
 from app.services.shared.openai_location_service import analyze_image_location_with_openai
 from app.services.shared.ocr_service import extract_text_with_cloud_vision
 
+# Search OpenAI fallback flow:
+# image -> optional OCR extraction -> OpenAI location inference
+# -> geocode returned place/address text -> validate against hints
+# -> normalize into SearchLocationResolution for the search pipeline
+
 
 def _build_geocode_query(
     *,
     place_name: str | None,
     formatted_address: str | None,
-    hints: SearchHintContext,
 ) -> str | None:
     parts: list[str] = []
     for value in (
         place_name,
         formatted_address,
-        hints.normalized_city(),
-        hints.normalized_country(),
     ):
         cleaned = (value or "").strip()
         if cleaned and cleaned not in parts:
@@ -58,7 +60,6 @@ def resolve_location_with_openai(
     geocode_query = _build_geocode_query(
         place_name=result.get("place_name"),
         formatted_address=result.get("formatted_address"),
-        hints=hints,
     )
 
     if not geocode_query:
@@ -84,6 +85,7 @@ def resolve_location_with_openai(
                     "geocode_query": geocode_query,
                     "user_hint_used": user_hint or hints.normalized_user_hint(),
                     "ocr_text_used": bool(ocr_text and ocr_text.strip()),
+                    "exact_place_name_returned": bool(result.get("place_name")),
                 },
             ),
             result,
@@ -105,6 +107,7 @@ def resolve_location_with_openai(
                 "geocode_query": geocode_query,
                 "user_hint_used": user_hint or hints.normalized_user_hint(),
                 "ocr_text_used": bool(ocr_text and ocr_text.strip()),
+                "exact_place_name_returned": bool(result.get("place_name")),
             },
         ),
         result,

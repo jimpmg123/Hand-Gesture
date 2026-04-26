@@ -1335,6 +1335,11 @@
   color: var(--accent);
 }
 
+.result-state-pill--warning {
+  background: rgba(217, 119, 6, 0.14);
+  color: #9a5806;
+}
+
 .result-state-pill--failed {
   background: rgba(185, 28, 28, 0.12);
   color: #b42318;
@@ -1458,6 +1463,11 @@
   border-color: rgba(15, 118, 110, 0.25);
 }
 
+.search-uploaded-strip-card--warning {
+  border-color: rgba(217, 119, 6, 0.24);
+  background: rgba(255, 248, 236, 0.9);
+}
+
 .search-uploaded-strip-card--failed {
   border-color: rgba(217, 119, 6, 0.18);
 }
@@ -1471,18 +1481,14 @@
 
 .search-uploaded-strip-copy {
   display: grid;
-  gap: 4px;
+  gap: 0;
+  justify-items: center;
+  align-items: center;
 }
 
 .search-uploaded-strip-copy strong {
-  font-size: 1rem;
+  font-size: 1.2rem;
   color: var(--ink);
-}
-
-.search-uploaded-strip-copy span {
-  font-size: 0.92rem;
-  color: var(--muted);
-  line-height: 1.4;
 }
 
 .details-placeholder-item strong,

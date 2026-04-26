@@ -19,6 +19,11 @@ export function SearchResults({
 }: SearchResultsProps) {
   const [retryHints, setRetryHints] = useState<Record<string, string>>({})
   const [retryingId, setRetryingId] = useState<string | null>(null)
+  const mappedResults = bundle.results.filter(
+    (result) => result.latitude != null && result.longitude != null,
+  )
+  const savedCount = bundle.results.filter((result) => result.status === 'saved').length
+  const warningCount = bundle.results.filter((result) => result.status === 'warning').length
 
   const handleRetry = async (uploadId: string) => {
     const hint = retryHints[uploadId]?.trim()
@@ -81,17 +86,18 @@ export function SearchResults({
           <div className="map-placeholder-head">
             <span className="pill">Resolved locations</span>
             <span className="pill">
-              {bundle.topResolved ? `${bundle.results.filter((result) => result.status === 'saved').length} saved` : 'No saved coordinates'}
+              {mappedResults.length > 0
+                ? `${savedCount} exact${warningCount ? ` · ${warningCount} warning` : ''}`
+                : 'No mapped coordinates'}
             </span>
           </div>
           <SearchResultMap results={bundle.results} />
           <div className="search-uploaded-strip">
-            {bundle.results.map((result) => (
+            {mappedResults.map((result, index) => (
               <article key={result.id} className={`search-uploaded-strip-card search-uploaded-strip-card--${result.status}`}>
                 <img src={result.previewUrl} alt={result.imageName} className="search-uploaded-strip-image" />
                 <div className="search-uploaded-strip-copy">
-                  <strong>{result.imageName}</strong>
-                  <span>{result.status === 'saved' ? result.address ?? result.coordinates : 'No coordinates returned'}</span>
+                  <strong>#{index + 1}</strong>
                 </div>
               </article>
             ))}
@@ -99,7 +105,7 @@ export function SearchResults({
         </div>
 
         <aside className="focus-card focus-card--search">
-          <span className="result-label">Top resolved image</span>
+          <span className="result-label">Top mapped image</span>
           {bundle.topResolved ? (
             <>
               <img
@@ -144,7 +150,11 @@ export function SearchResults({
                     <p>{result.address ?? 'No resolved address'}</p>
                   </div>
                   <span className={`result-state-pill result-state-pill--${result.status}`}>
-                    {result.status === 'saved' ? 'Resolved' : 'Failed'}
+                    {result.status === 'saved'
+                      ? 'Resolved'
+                      : result.status === 'warning'
+                        ? 'Warning'
+                        : 'Failed'}
                   </span>
                 </div>
 

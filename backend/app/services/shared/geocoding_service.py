@@ -10,7 +10,7 @@ from app.core.config import GOOGLE_MAPS_API_KEY
 GOOGLE_GEOCODE_URL = "https://maps.googleapis.com/maps/api/geocode/json"
 
 
-# Geocoding API를 호출하기 전에 Google Maps API 키가 설정돼 있는지 확인한다.
+# Verify that a Google Maps API key is configured before calling the Geocoding API.
 def _require_api_key() -> str:
     if not GOOGLE_MAPS_API_KEY:
         raise RuntimeError(
@@ -20,7 +20,7 @@ def _require_api_key() -> str:
     return GOOGLE_MAPS_API_KEY
 
 
-# Geocoding API 응답에서 country, city, region 같은 핵심 주소 단위를 추출한다.
+# Extract key address fields such as country, city, and region from a Geocoding API response.
 def _parse_address_components(result: dict[str, Any]) -> dict[str, str | None]:
     components = result.get("address_components", [])
 
@@ -54,7 +54,7 @@ def _parse_address_components(result: dict[str, Any]) -> dict[str, str | None]:
     }
 
 
-# Geocoding API 공통 GET 호출 결과를 JSON으로 읽는다.
+# Read a shared Geocoding API GET response as JSON.
 def _load_geocode_json(query_params: dict[str, Any]) -> dict[str, Any]:
     api_key = _require_api_key()
     query = urlencode({**query_params, "key": api_key})
@@ -63,7 +63,7 @@ def _load_geocode_json(query_params: dict[str, Any]) -> dict[str, Any]:
         return json.loads(response.read().decode("utf-8"))
 
 
-# Geocoding 응답의 첫 결과를 공통 형식으로 정리한다.
+# Normalize the first Geocoding result into a shared response format.
 def _normalize_geocode_result(result: dict[str, Any]) -> dict[str, Any]:
     geometry = result.get("geometry", {})
     location = geometry.get("location", {})
@@ -81,7 +81,7 @@ def _normalize_geocode_result(result: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-# 좌표를 사람이 읽는 주소로 바꾸는 공용 함수다.
+# Convert coordinates into a human-readable address.
 def reverse_geocode_coordinates(
     latitude: float,
     longitude: float,
@@ -112,7 +112,7 @@ def reverse_geocode_coordinates(
     }
 
 
-# 주소를 좌표로 바꾸는 공용 함수다.
+# Convert an address into coordinates.
 def geocode_address(
     address: str,
     *,
